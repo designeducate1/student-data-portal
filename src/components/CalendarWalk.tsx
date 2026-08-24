@@ -1607,7 +1607,12 @@ function getCalendarWalkHtml(
         const footBox = new THREE.Box3().setFromObject(characterRoot);
         groundY = footBox.min.y;
       }
-      characterRoot.position.y -= groundY;
+      // The toe-end joint sits inside the foot, not at the sole -- the shoe
+      // mesh extends a bit below and around it, so landing the joint
+      // exactly on the floor still buries the visible sole. Lift a little
+      // further so the sole itself rests on the surface.
+      const FOOT_SOLE_CLEARANCE = 0.3;
+      characterRoot.position.y -= groundY - FOOT_SOLE_CLEARANCE;
 
       characterRoot.updateMatrixWorld(true);
       const initialSurfaceY = getSurfaceHeightAt(characterParent.position.x, characterParent.position.z);
