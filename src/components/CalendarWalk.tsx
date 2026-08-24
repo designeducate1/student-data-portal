@@ -1569,15 +1569,6 @@ function getCalendarWalkHtml(
       characterRoot.scale.setScalar(11);
       characterRoot.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
 
-      // This rig's own origin isn't at its feet, so without this the
-      // character sinks into the calendar floor by roughly half its
-      // height. Measure its actual lowest point after scaling and shift it
-      // up so the feet -- not the model's internal pivot -- sit at y=0
-      // within characterParent (whose position.y then tracks the surface).
-      characterRoot.updateMatrixWorld(true);
-      const footBox = new THREE.Box3().setFromObject(characterRoot);
-      characterRoot.position.y -= footBox.min.y;
-
       characterParent.add(characterRoot);
 
       mixer = new THREE.AnimationMixer(characterRoot);
@@ -1587,6 +1578,36 @@ function getCalendarWalkHtml(
       rightFootBone = characterRoot.getObjectByName('mixamorigRightFoot');
       hipsBone = characterRoot.getObjectByName('mixamorigHips');
       if (hipsBone) hipsRestPosition = hipsBone.position.clone();
+
+      // This rig's own origin isn't at its feet, so without this the
+      // character sinks into the calendar floor by roughly half its
+      // height. The naive fix -- Box3().setFromObject(characterRoot) --
+      // looks reasonable but is wrong for a *skinned* mesh: three.js builds
+      // that box from the mesh's raw bind-pose geometry positions (a tiny,
+      // near-origin space skinning deforms away from at render time), not
+      // from where the skeleton actually places the rig, so it comes back
+      // roughly two orders of magnitude too small and barely nudges the
+      // model. The toe-end bones ARE regular scene-graph nodes positioned
+      // by the real skeleton pose, so their world Y after scaling is the
+      // model's actual lowest point -- shift the root up so that lands at
+      // y=0 within characterParent (whose position.y then tracks the
+      // surface).
+      characterRoot.updateMatrixWorld(true);
+      const leftToe = characterRoot.getObjectByName('mixamorigLeftToe_End');
+      const rightToe = characterRoot.getObjectByName('mixamorigRightToe_End');
+      let groundY = 0;
+      if (leftToe && rightToe) {
+        const leftToeWorld = new THREE.Vector3();
+        const rightToeWorld = new THREE.Vector3();
+        leftToe.getWorldPosition(leftToeWorld);
+        rightToe.getWorldPosition(rightToeWorld);
+        groundY = Math.min(leftToeWorld.y, rightToeWorld.y);
+      } else {
+        // Fallback for a differently-rigged model with no toe-end bones.
+        const footBox = new THREE.Box3().setFromObject(characterRoot);
+        groundY = footBox.min.y;
+      }
+      characterRoot.position.y -= groundY;
 
       characterRoot.updateMatrixWorld(true);
       const initialSurfaceY = getSurfaceHeightAt(characterParent.position.x, characterParent.position.z);
