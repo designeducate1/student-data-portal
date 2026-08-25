@@ -196,6 +196,132 @@ function getCalendarWalkHtml(
       background: transparent; border: none; color: var(--cal-text-muted); font-size: 13px; font-weight: 700;
       cursor: pointer; padding: 2px 6px;
     }
+    .notes-collapse-btn {
+      background: rgba(127,127,127,0.12); border: none; color: var(--cal-modal-text); font-size: 14px; font-weight: 800;
+      cursor: pointer; width: 22px; height: 22px; border-radius: 50%; line-height: 1;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .notes-collapse-btn:hover { background: rgba(127,127,127,0.22); }
+
+    /* Notes/Tasks panels are moveable (drag the header) and collapsible
+       (header stays, body hides) rather than fixed in place -- useful for
+       keeping them out of the way of the walkable 3D view underneath. */
+    .panel-drag-handle { cursor: grab; touch-action: none; }
+    .panel-drag-handle:active { cursor: grabbing; }
+    .panel-drag-grip { color: var(--cal-text-muted); font-size: 12px; letter-spacing: -2px; margin-right: 2px; }
+    .panel-body { display: flex; flex-direction: column; gap: 10px; }
+    #weekNotesModal.panel-collapsed .panel-body,
+    #dayTasksModal.panel-collapsed .panel-body { display: none; }
+    #weekNotesModal.panel-collapsed,
+    #dayTasksModal.panel-collapsed { gap: 0; padding-bottom: 10px; }
+
+    /* Task ADHD-support UI: due date, next-step focus, expand-to-see-all,
+       study plan entry point. */
+    .task-due-row { display: flex; flex-direction: column; gap: 3px; }
+    .task-due-row label { font-size: 10.5px; color: var(--cal-text-muted); font-weight: 600; }
+    .task-due-input {
+      background: rgba(127,127,127,0.06); border: 1px solid var(--cal-modal-border); border-radius: 10px;
+      padding: 6px 10px; font-size: 12.5px; color: var(--cal-modal-text); font-family: var(--font-body);
+      outline: none; align-self: flex-start;
+    }
+    .task-due-input:focus { border-color: var(--cal-accent); }
+    .task-next-row {
+      display: flex; align-items: center; gap: 8px; background: rgba(214,138,30,0.1);
+      border: 1px solid var(--cal-modal-border); border-radius: 10px; padding: 7px 10px;
+    }
+    .task-next-row.task-all-done { justify-content: center; font-size: 12.5px; font-weight: 700; color: var(--cal-accent); background: rgba(60,90,107,0.08); }
+    .task-next-label { font-size: 9.5px; font-weight: 800; text-transform: uppercase; color: #d68a1e; letter-spacing: 0.04em; flex-shrink: 0; }
+    .task-next-text { font-size: 12.5px; flex: 1; line-height: 1.3; }
+    .task-focus-btn {
+      background: #d68a1e; color: #fff; border: none; border-radius: 8px; padding: 5px 10px;
+      font-size: 11px; font-weight: 800; cursor: pointer; flex-shrink: 0; white-space: nowrap;
+    }
+    .task-focus-btn:hover { opacity: 0.9; }
+    .task-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .task-expand-btn, .task-plan-btn {
+      background: transparent; border: 1px solid var(--cal-modal-border); color: var(--cal-text-muted);
+      border-radius: 8px; padding: 4px 9px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+    .task-expand-btn:hover, .task-plan-btn:hover { color: var(--cal-accent); border-color: var(--cal-accent); }
+    .task-step-row.task-step-next { background: rgba(214,138,30,0.08); border-radius: 8px; padding: 3px 6px; margin: -3px -6px; }
+
+    /* Focus session: energy check-in prompt + floating countdown widget +
+       a brief reward toast on completion. */
+    #focusEnergyPrompt {
+      position: absolute; inset: 0; z-index: 70; background: rgba(0,0,0,0.35);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+    }
+    #focusEnergyPrompt.active { opacity: 1; pointer-events: auto; }
+    .focus-energy-card {
+      width: min(88vw, 320px); background: var(--cal-modal-surface); border: 1px solid var(--cal-modal-border);
+      border-radius: 20px; padding: 20px; box-shadow: var(--cal-shadow); color: var(--cal-modal-text);
+      display: flex; flex-direction: column; gap: 10px; text-align: center;
+    }
+    .focus-energy-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--cal-text-muted); letter-spacing: 0.04em; }
+    .focus-energy-task { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .focus-energy-question { font-size: 12.5px; color: var(--cal-text-muted); margin-bottom: 4px; }
+    .focus-energy-btns { display: flex; flex-direction: column; gap: 8px; }
+    .focus-energy-btn {
+      border: none; border-radius: 12px; padding: 10px 14px; font-weight: 800; font-size: 13px;
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between; color: #fff;
+    }
+    .focus-energy-btn span { font-size: 11px; font-weight: 700; opacity: 0.85; }
+    .focus-energy-btn.full { background: var(--cal-accent); }
+    .focus-energy-btn.low { background: #d68a1e; }
+    .focus-energy-cancel { background: transparent; border: none; color: var(--cal-text-muted); font-size: 12px; font-weight: 700; cursor: pointer; padding: 4px; margin-top: 2px; }
+
+    #focusTimerWidget {
+      position: absolute; left: 14px; bottom: 18px; z-index: 45;
+      background: var(--cal-surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1.5px solid var(--cal-surface-border); border-radius: 18px; padding: 10px 14px;
+      box-shadow: var(--cal-shadow); display: flex; align-items: center; gap: 10px;
+      opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s;
+    }
+    #focusTimerWidget.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .focus-timer-label { font-size: 11px; font-weight: 700; color: var(--cal-text-muted); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .focus-timer-time { font-size: 18px; font-weight: 800; font-family: var(--font-display); color: var(--cal-accent); font-variant-numeric: tabular-nums; }
+    .focus-timer-stop {
+      background: rgba(127,127,127,0.15); border: none; color: var(--cal-text); border-radius: 8px;
+      padding: 5px 10px; font-size: 11px; font-weight: 700; cursor: pointer;
+    }
+
+    #focusRewardToast {
+      position: absolute; left: 50%; top: 90px; transform: translateX(-50%) translateY(-10px);
+      z-index: 71; background: var(--cal-accent); color: #fff; font-weight: 800; font-size: 13px;
+      padding: 10px 20px; border-radius: 9999px; box-shadow: var(--cal-shadow);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #focusRewardToast.active { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Study plan: a radial timing-only mind map (no task instructions) --
+       center node is the submission, branches are day-segments with a
+       rough time budget each. */
+    #studyPlanOverlay {
+      position: absolute; inset: 0; z-index: 65; background: var(--cal-modal-surface);
+      opacity: 0; pointer-events: none; transform: translateY(12px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      display: flex; flex-direction: column; color: var(--cal-modal-text);
+    }
+    #studyPlanOverlay.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .study-plan-header-text { display: flex; flex-direction: column; align-items: center; }
+    .study-plan-sub { font-size: 11px; color: var(--cal-text-muted); font-weight: 600; }
+    #studyPlanCanvas { position: relative; flex: 1; margin: 24px; min-height: 0; }
+    .study-plan-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .study-plan-center {
+      position: absolute; transform: translate(-50%, -50%); width: 132px;
+      background: var(--cal-accent); color: #fff; border-radius: 16px; padding: 12px;
+      text-align: center; font-weight: 800; font-size: 12.5px; line-height: 1.3; box-shadow: var(--cal-shadow); z-index: 2;
+    }
+    .study-plan-node {
+      position: absolute; transform: translate(-50%, -50%); width: 104px;
+      background: var(--cal-modal-surface); border: 1.5px solid var(--cal-modal-border); border-radius: 12px;
+      padding: 8px; text-align: center; box-shadow: var(--cal-shadow); z-index: 2;
+    }
+    .study-plan-node.is-final { border-color: var(--cal-accent); background: rgba(60,90,107,0.1); }
+    .study-plan-node-day { font-size: 9.5px; color: var(--cal-text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
+    .study-plan-node-label { font-size: 11.5px; font-weight: 700; margin: 3px 0; }
+    .study-plan-node-minutes { font-size: 11px; color: var(--cal-accent); font-weight: 800; }
 
     #dayTasksModal {
       position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px);
@@ -381,45 +507,97 @@ function getCalendarWalkHtml(
     </div>
 
     <div id="weekNotesModal">
-      <div class="notes-header">
-        <div class="notes-title"><span id="notesWeekTitle">Notes</span></div>
+      <div class="notes-header panel-drag-handle">
+        <div class="notes-title"><span class="panel-drag-grip">&#8942;&#8942;</span><span id="notesWeekTitle">Notes</span></div>
         <div style="display:flex; align-items:center; gap:8px;">
           <span class="notes-tag" id="crystalThemeLabel">Amethyst</span>
+          <button class="notes-collapse-btn" id="notesCollapseBtn" type="button" aria-label="Collapse">&#8722;</button>
           <button class="notes-close-btn" id="notesCloseBtn" type="button">Close</button>
         </div>
       </div>
-      <div class="notes-list" id="notesList">
-        <div class="notes-empty">No notes for this day yet. Type below to add one.</div>
-      </div>
-      <div class="notes-input-row">
-        <input type="text" id="noteInput" class="notes-textarea" placeholder="Add a note for this day..." autocomplete="off" />
-        <button id="addNoteBtn" class="notes-add-btn">Add</button>
-      </div>
-      <div class="crystal-controls">
-        <span class="crystal-controls-label">Crystals</span>
-        <div class="crystal-slider-group">
-          <span title="Crystal size">Size</span>
-          <input type="range" id="crystalSizeSlider" min="0.5" max="1.6" step="0.05" value="1" />
+      <div class="panel-body">
+        <div class="notes-list" id="notesList">
+          <div class="notes-empty">No notes for this day yet. Type below to add one.</div>
         </div>
-        <div class="crystal-slider-group">
-          <span title="Glow">Glow</span>
-          <input type="range" id="crystalGlowSlider" min="0" max="2" step="0.1" value="1" />
+        <div class="notes-input-row">
+          <input type="text" id="noteInput" class="notes-textarea" placeholder="Add a note for this day..." autocomplete="off" />
+          <button id="addNoteBtn" class="notes-add-btn">Add</button>
+        </div>
+        <div class="crystal-controls">
+          <span class="crystal-controls-label">Crystals</span>
+          <div class="crystal-slider-group">
+            <span title="Crystal size">Size</span>
+            <input type="range" id="crystalSizeSlider" min="0.5" max="1.6" step="0.05" value="1" />
+          </div>
+          <div class="crystal-slider-group">
+            <span title="Glow">Glow</span>
+            <input type="range" id="crystalGlowSlider" min="0" max="2" step="0.1" value="1" />
+          </div>
         </div>
       </div>
     </div>
 
     <div id="dayTasksModal">
-      <div class="notes-header">
-        <div class="notes-title"><span id="tasksDayTitle">Tasks</span></div>
-        <button class="notes-close-btn" id="tasksCloseBtn" type="button">Close</button>
+      <div class="notes-header panel-drag-handle">
+        <div class="notes-title"><span class="panel-drag-grip">&#8942;&#8942;</span><span id="tasksDayTitle">Tasks</span></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="notes-collapse-btn" id="tasksCollapseBtn" type="button" aria-label="Collapse">&#8722;</button>
+          <button class="notes-close-btn" id="tasksCloseBtn" type="button">Close</button>
+        </div>
       </div>
-      <div class="notes-list" id="tasksList">
-        <div class="notes-empty">No tasks for this day yet. Add one below.</div>
+      <div class="panel-body">
+        <div class="notes-list" id="tasksList">
+          <div class="notes-empty">No tasks for this day yet. Add one below.</div>
+        </div>
+        <div class="notes-input-row">
+          <input type="text" id="taskInput" class="notes-textarea" placeholder="e.g. Essay on the water cycle" autocomplete="off" />
+          <button id="addTaskBtn" class="notes-add-btn">Add</button>
+        </div>
+        <div class="task-due-row">
+          <label for="taskDueInput">Due date (optional -- unlocks a study plan)</label>
+          <input type="date" id="taskDueInput" class="task-due-input" />
+        </div>
       </div>
-      <div class="notes-input-row">
-        <input type="text" id="taskInput" class="notes-textarea" placeholder="e.g. Essay on the water cycle due..." autocomplete="off" />
-        <button id="addTaskBtn" class="notes-add-btn">Add</button>
+    </div>
+
+    <!-- Focus session: a short energy check-in before starting a timed chunk -->
+    <div id="focusEnergyPrompt">
+      <div class="focus-energy-card">
+        <div class="focus-energy-title">Focus on:</div>
+        <div class="focus-energy-task" id="focusEnergyTaskLabel">--</div>
+        <div class="focus-energy-question">How's your energy right now?</div>
+        <div class="focus-energy-btns">
+          <button id="focusEnergyFullBtn" class="focus-energy-btn full" type="button">Ready to focus<span>20 min</span></button>
+          <button id="focusEnergyLowBtn" class="focus-energy-btn low" type="button">Low energy today<span>8 min</span></button>
+        </div>
+        <button id="focusEnergyCancelBtn" class="focus-energy-cancel" type="button">Cancel</button>
       </div>
+    </div>
+
+    <!-- Floating countdown while a focus session is running -->
+    <div id="focusTimerWidget">
+      <div class="focus-timer-label" id="focusTimerLabel">--</div>
+      <div class="focus-timer-time" id="focusTimerTime">0:00</div>
+      <button id="focusTimerStopBtn" class="focus-timer-stop" type="button">Stop</button>
+    </div>
+
+    <div id="focusRewardToast">
+      <span id="focusRewardText">Nice work!</span>
+    </div>
+
+    <!-- Study plan: a separate window (opened per-task) mapping only WHEN
+         and roughly HOW MUCH time to spend across the days before the due
+         date -- never what to actually do, that stays in the step list. -->
+    <div id="studyPlanOverlay" aria-label="Study plan">
+      <div class="month-grid-header">
+        <button class="month-grid-back" id="studyPlanBackBtn" type="button" aria-label="Close">&lt;</button>
+        <div class="study-plan-header-text">
+          <span class="month-grid-title" id="studyPlanTitle">Study Plan</span>
+          <span class="study-plan-sub" id="studyPlanDue">--</span>
+        </div>
+        <span style="width:34px;"></span>
+      </div>
+      <div id="studyPlanCanvas"></div>
     </div>
 
     <div id="tutorialWrapper" class="tutorial-wrapper">
@@ -718,19 +896,24 @@ function getCalendarWalkHtml(
     // task-type keywords and returns that type's standard sub-steps and a
     // base time estimate. Falls back to a generic 3-step breakdown when
     // nothing matches. No AI/model call involved -- plain keyword rules.
+    //
+    // The FIRST step in every list is deliberately trivial and concrete
+    // (open the doc, get the notes out physically in front of you) rather
+    // than something like "plan it out", which is itself an executive-
+    // function-heavy ask and the exact place task initiation stalls.
     const TASK_CATEGORIES = [
       { key: 'essay', match: /essay|report|coursework|assignment|write.?up/i, baseMinutes: 90,
-        steps: ['Plan and jot down key points', 'Write a first draft', 'Read back through and edit', 'Submit it'] },
+        steps: ['Open a blank doc and just type the title', 'Write a first draft -- messy is fine', 'Read back through and edit', 'Submit it'] },
       { key: 'revision', match: /revis|exam|test|quiz|mock/i, baseMinutes: 45,
-        steps: ['Gather your notes', 'Make a summary sheet', 'Try a few practice questions', 'Check what you got wrong'] },
+        steps: ['Get your notes out and put them in front of you', 'Make a summary sheet', 'Try a few practice questions', 'Check what you got wrong'] },
       { key: 'reading', match: /read|chapter|book/i, baseMinutes: 30,
-        steps: ['Find a quiet spot', 'Read the section', 'Jot down one thing you learned'] },
+        steps: ['Find a quiet spot and open to the right page', 'Read the section', 'Jot down one thing you learned'] },
       { key: 'presentation', match: /presentation|slides|present/i, baseMinutes: 60,
-        steps: ['Decide the main points', 'Build the slides', 'Practise saying it out loud'] },
+        steps: ['Open a blank slide and write the title', 'Decide the main points', 'Build the slides', 'Practise saying it out loud'] },
       { key: 'project', match: /project|portfolio|build|make\s/i, baseMinutes: 75,
-        steps: ["Break it into smaller pieces", 'Work on the first piece', "Check progress against what's due", 'Finish and tidy up'] },
+        steps: ['Write down the smallest possible first piece', 'Work on that first piece', "Check progress against what's due", 'Finish and tidy up'] },
       { key: 'general', match: /.*/, baseMinutes: 30,
-        steps: ['Get started', 'Work on it', 'Finish and check it over'] },
+        steps: ['Open whatever you need and just look at it', 'Work on it', 'Finish and check it over'] },
     ];
 
     function decodeTask(rawText) {
@@ -738,17 +921,35 @@ function getCalendarWalkHtml(
       return { categoryKey: category.key, baseMinutes: category.baseMinutes, steps: category.steps.slice() };
     }
 
-    // The personal multiplier is the estimator's other half -- a short,
-    // optional, on-device self-profiling exercise is a separate future
-    // feature. Until that exists this reads a neutral default (1x) from
-    // the same local key that feature will eventually write to, so wiring
-    // it in later won't require touching this function again.
-    function getPersonalMultiplier() {
+    // Self-calibrating estimator: rather than one flat global multiplier,
+    // track actual logged-vs-estimated minutes PER category (a student
+    // might reliably underestimate essays but overestimate reading, so one
+    // blended number hides that). Each finished focus session feeds this;
+    // future estimates for that category drift toward the student's own
+    // real pace instead of staying pinned to the rule-based baseline.
+    function loadCategoryStats() {
       try {
-        const v = parseFloat(localStorage.getItem(TASK_MULTIPLIER_KEY));
-        if (!isNaN(v) && v > 0) return v;
-      } catch (e) {}
+        const raw = localStorage.getItem(TASK_MULTIPLIER_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) { return {}; }
+    }
+    function saveCategoryStats(stats) {
+      try { localStorage.setItem(TASK_MULTIPLIER_KEY, JSON.stringify(stats)); } catch (e) {}
+    }
+    function getCategoryMultiplier(categoryKey) {
+      const stats = loadCategoryStats();
+      const s = stats[categoryKey];
+      if (s && s.estimatedTotal > 0 && s.loggedTotal > 0) {
+        return THREE.MathUtils.clamp(s.loggedTotal / s.estimatedTotal, 0.5, 2.5);
+      }
       return 1;
+    }
+    function recordFocusSessionOutcome(categoryKey, estimatedMinutesForSession, actualMinutes) {
+      const stats = loadCategoryStats();
+      if (!stats[categoryKey]) stats[categoryKey] = { estimatedTotal: 0, loggedTotal: 0 };
+      stats[categoryKey].estimatedTotal += estimatedMinutesForSession;
+      stats[categoryKey].loggedTotal += actualMinutes;
+      saveCategoryStats(stats);
     }
 
     function computeTaskStatus(task) {
@@ -758,14 +959,16 @@ function getCalendarWalkHtml(
       return 'in_progress';
     }
 
-    function createTask(dateKey, rawText) {
+    function createTask(dateKey, rawText, dueDateISO) {
       const decoded = decodeTask(rawText);
-      const multiplier = getPersonalMultiplier();
+      const multiplier = getCategoryMultiplier(decoded.categoryKey);
       const id = 'task_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       return {
         id,
         dateISO: dateKey,
+        dueDateISO: dueDateISO || null,
         rawText,
+        categoryKey: decoded.categoryKey,
         decodedSteps: decoded.steps.map((text, i) => ({ id: id + '_s' + i, text, done: false })),
         estimatedMinutes: Math.round(decoded.baseMinutes * multiplier),
         loggedMinutes: 0,
@@ -1361,7 +1564,14 @@ function getCalendarWalkHtml(
         crystalGroup.position.set(x, CARD_TOP_Y + 0.1, z);
         group.add(crystalGroup);
 
-        dayEntries.set(key, { date, row, col, isPadding, crystalGroup, noteCount: 0, growT: 1 });
+        // Test: wherever the study-plan estimator has assigned a study
+        // session, a small building model from the Little Big City asset
+        // set appears on that day's tile -- see applyStudyMarkersToPage().
+        const studyMarkerGroup = new THREE.Group();
+        studyMarkerGroup.position.set(x, CARD_TOP_Y + 0.05, z);
+        group.add(studyMarkerGroup);
+
+        dayEntries.set(key, { date, row, col, isPadding, crystalGroup, studyMarkerGroup, noteCount: 0, growT: 1 });
       }
 
       return { group, year, month, dayEntries };
@@ -1392,6 +1602,135 @@ function getCalendarWalkHtml(
       });
     }
 
+    // Test: place a small building model on every day tile the study-plan
+    // estimator has assigned a study session to, across ALL tasks that have
+    // a due date. Starts locked (grey, unclaimable) -- it only unlocks to
+    // its real look once the step mapped to that day is actually checked
+    // off, at which point it can be tapped to bank it into a personal
+    // reserve for later use in Little Big City. Two model variants (only
+    // V1/V2 resolve on that asset host -- V3+ all 404) alternate per date
+    // for visual variety.
+    const STUDY_BUILDING_MODEL_URLS = [
+      'https://skyworldv1.netlify.app/assets/ToykobuildingV1.glb',
+      'https://skyworldv1.netlify.app/assets/ToykobuildingV2.glb',
+    ];
+    // The two source GLBs are authored at very different native scales, so
+    // a single flat multiplier made one tower over the character and the
+    // other barely register. Normalize each template to the SAME target
+    // height instead. Target is calibrated to roughly 3x how big the V2
+    // model (the one that lands on day 27 dates, per the reference build)
+    // looked at its old flat scale=4 -- proportionate to a calendar tile,
+    // not a landmark.
+    const STUDY_BUILDING_TARGET_HEIGHT = 3.6;
+    const studyBuildingTemplates = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(null);
+    const studyBuildingScales = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(1);
+    const BUILDING_RESERVE_KEY = 'calendar_walk_building_reserve_' + (STUDENT_ID || 'guest');
+    const claimedStudyDayKeys = new Set(loadBuildingReserve().map((b) => b.claimId));
+
+    function loadBuildingReserve() {
+      try {
+        const raw = localStorage.getItem(BUILDING_RESERVE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
+    function saveBuildingReserve(list) {
+      try { localStorage.setItem(BUILDING_RESERVE_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+
+    STUDY_BUILDING_MODEL_URLS.forEach((url, i) => {
+      new THREE.GLTFLoader().load(url, (gltf) => {
+        const template = gltf.scene;
+        const box = new THREE.Box3().setFromObject(template);
+        const nativeHeight = Math.max(0.001, box.max.y - box.min.y);
+        studyBuildingScales[i] = STUDY_BUILDING_TARGET_HEIGHT / nativeHeight;
+        studyBuildingTemplates[i] = template;
+        refreshStudyMarkers();
+      }, undefined, (error) => console.warn('Study building model failed to load: ' + url, error));
+    });
+
+    const LOCKED_BUILDING_MATERIAL = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.95, metalness: 0.02 });
+
+    // Every scheduled day maps to exactly one of the task's decoded steps
+    // (spread proportionally across however many day-segments the plan has),
+    // so "achieved" means that specific step is checked off -- not the
+    // whole task -- which is what lets each day's building unlock on its
+    // own as the student actually works through the steps.
+    function getScheduledStudyEntries() {
+      const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+      const map = {};
+      Object.keys(DAY_TASKS).forEach((dayKey) => {
+        (DAY_TASKS[dayKey] || []).forEach((task) => {
+          if (!task.dueDateISO) return;
+          const nodes = buildStudyPlanNodes(task);
+          nodes.forEach((n, i) => {
+            const key = isoKey(addDays(today, n.dateOffset));
+            if (map[key]) return; // first task/day wins on a clash
+            const stepIndex = task.decodedSteps.length
+              ? Math.min(task.decodedSteps.length - 1, Math.floor((i * task.decodedSteps.length) / nodes.length))
+              : -1;
+            const step = stepIndex >= 0 ? task.decodedSteps[stepIndex] : null;
+            const claimId = task.id + '_' + key;
+            map[key] = {
+              task, key, isFinal: n.isFinal,
+              achieved: !!(step && step.done),
+              claimed: claimedStudyDayKeys.has(claimId),
+              claimId,
+            };
+          });
+        });
+      });
+      return map;
+    }
+
+    function claimStudyBuilding(claimId, task, dateKey, modelIndex) {
+      if (claimedStudyDayKeys.has(claimId)) return;
+      claimedStudyDayKeys.add(claimId);
+      const reserve = loadBuildingReserve();
+      reserve.push({
+        claimId, taskId: task.id, taskLabel: task.rawText, dateKey,
+        modelUrl: STUDY_BUILDING_MODEL_URLS[modelIndex], state: 'claimed', claimedAt: Date.now(),
+      });
+      saveBuildingReserve(reserve);
+      showRewardToast('Building banked to your reserve!');
+      refreshStudyMarkers();
+    }
+
+    function applyStudyMarkersToPage(page) {
+      if (!page) return;
+      if (studyBuildingTemplates.every((t) => !t)) return;
+      const scheduled = getScheduledStudyEntries();
+      page.dayEntries.forEach((entry, key) => {
+        while (entry.studyMarkerGroup.children.length) entry.studyMarkerGroup.remove(entry.studyMarkerGroup.children[0]);
+        entry.studyMarkerGroup.userData.claimInfo = null;
+        const info = scheduled[key];
+        if (!info || info.claimed) return;
+        const modelIndex = entry.date.getDate() % studyBuildingTemplates.length;
+        const template = studyBuildingTemplates[modelIndex] || studyBuildingTemplates.find((t) => t);
+        if (!template) return;
+        const model = template.clone(true);
+        model.scale.setScalar(studyBuildingScales[modelIndex] || STUDY_BUILDING_TARGET_HEIGHT);
+        model.traverse((o) => {
+          if (o.isMesh) {
+            o.castShadow = true;
+            o.receiveShadow = true;
+            if (!info.achieved) {
+              o.userData.originalMaterial = o.material;
+              o.material = LOCKED_BUILDING_MATERIAL;
+            }
+          }
+        });
+        entry.studyMarkerGroup.add(model);
+        if (info.achieved) {
+          entry.studyMarkerGroup.userData.claimInfo = { claimId: info.claimId, task: info.task, dateKey: key, modelIndex };
+        }
+      });
+    }
+
+    function refreshStudyMarkers() {
+      applyStudyMarkersToPage(currentPage);
+      applyStudyMarkersToPage(nextPage);
+    }
+
     function updateCrystalGrowth(dt) {
       [currentPage, nextPage].forEach((page) => {
         if (!page) return;
@@ -1408,6 +1747,7 @@ function getCalendarWalkHtml(
     currentPage.group.position.set(0, 0, 0);
     stage.add(currentPage.group);
     syncPageCrystals(currentPage, false);
+    applyStudyMarkersToPage(currentPage);
     let nextPage = null;
     let flipState = null; // { direction, t, outgoing, incoming }
     const FLIP_DURATION = { snap: 0.55, elegant: 1.05, bouncy: 0.85, clean: 0.7 };
@@ -1433,6 +1773,7 @@ function getCalendarWalkHtml(
 
       nextPage = buildMonthPage(targetYear, targetMonth);
       syncPageCrystals(nextPage, false);
+      applyStudyMarkersToPage(nextPage);
       nextPage.group.position.set(0, 0, 0);
       stage.add(nextPage.group);
 
@@ -1682,6 +2023,7 @@ function getCalendarWalkHtml(
         currentPage.group.rotation.set(0, 0, 0);
         stage.add(currentPage.group);
         syncPageCrystals(currentPage, false);
+        applyStudyMarkersToPage(currentPage);
         updateMonthLauncher(TODAY.getFullYear(), TODAY.getMonth());
       }
       isAutoWalkingToToday = true;
@@ -1707,11 +2049,11 @@ function getCalendarWalkHtml(
 
     const touchStart = { x: 0, y: 0 };
     window.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
       const t = e.touches[0]; touchStart.x = t.clientX; touchStart.y = t.clientY; hideTutorial();
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
       e.preventDefault();
       isAutoWalkingToToday = false;
       const t = e.touches[0];
@@ -1723,7 +2065,7 @@ function getCalendarWalkHtml(
       movement.left = jx < -0.3; movement.right = jx > 0.3; movement.forward = jy < -0.3; movement.backward = jy > 0.3;
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
       movement.left = movement.right = movement.forward = movement.backward = false;
     }, { passive: true });
 
@@ -1748,12 +2090,40 @@ function getCalendarWalkHtml(
       return false;
     }
     window.addEventListener('dblclick', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
       if (checkCharacterHit(e.clientX, e.clientY)) triggerWalkToToday();
+    });
+
+    // Tapping an unlocked (achieved) study building banks it into the
+    // student's reserve. Locked (grey) buildings aren't in this hit-test
+    // set at all -- "unaccessible as an asset" until earned.
+    function checkStudyBuildingClaim(clientX, clientY) {
+      mousePos.x = (clientX / window.innerWidth) * 2 - 1;
+      mousePos.y = -(clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mousePos, camera);
+      const claimableGroups = [];
+      [currentPage, nextPage].forEach((page) => {
+        if (!page) return;
+        page.dayEntries.forEach((entry) => {
+          if (entry.studyMarkerGroup.userData.claimInfo) claimableGroups.push(entry.studyMarkerGroup);
+        });
+      });
+      if (claimableGroups.length === 0) return;
+      const hits = raycaster.intersectObjects(claimableGroups, true);
+      if (hits.length === 0) return;
+      let hitGroup = hits[0].object;
+      while (hitGroup && !hitGroup.userData.claimInfo) hitGroup = hitGroup.parent;
+      if (!hitGroup) return;
+      const info = hitGroup.userData.claimInfo;
+      claimStudyBuilding(info.claimId, info.task, info.dateKey, info.modelIndex);
+    }
+    window.addEventListener('click', (e) => {
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      checkStudyBuildingClaim(e.clientX, e.clientY);
     });
     let lastTouchTapTime = 0, lastTouchTapX = 0, lastTouchTapY = 0;
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
       const now = Date.now();
       const touch = e.changedTouches && e.changedTouches[0];
       if (touch) {
@@ -1764,7 +2134,7 @@ function getCalendarWalkHtml(
       }
     }, { passive: true });
     window.addEventListener('mousemove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) { canvas.style.cursor = 'default'; return; }
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) { canvas.style.cursor = 'default'; return; }
       canvas.style.cursor = checkCharacterHit(e.clientX, e.clientY) ? 'pointer' : 'default';
     });
     function hideTutorial() { const el = document.getElementById('tutorialWrapper'); if (el) el.style.display = 'none'; }
@@ -1791,13 +2161,65 @@ function getCalendarWalkHtml(
     const tasksDayTitleEl = document.getElementById('tasksDayTitle');
     const tasksListEl = document.getElementById('tasksList');
     const taskInputEl = document.getElementById('taskInput');
+    const taskDueInputEl = document.getElementById('taskDueInput');
     const addTaskBtnEl = document.getElementById('addTaskBtn');
     const tasksCloseBtnEl = document.getElementById('tasksCloseBtn');
+    const expandedTaskIds = new Set();
 
     let currentDateKey = null;
     let currentDate = null;
     let notesOpen = false;
     let tasksOpen = false;
+
+    // Drag (by header) + collapse (header stays, body hides) for the
+    // notes/tasks panels, so they can be moved out of the way of the
+    // walkable 3D view underneath instead of staying pinned in place.
+    function makePanelMoveableAndCollapsible(panelEl, collapseBtnEl) {
+      if (!panelEl) return;
+      const handle = panelEl.querySelector('.panel-drag-handle');
+      if (handle) {
+        let dragging = false;
+        let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+        handle.addEventListener('pointerdown', (e) => {
+          if (e.target.closest('button')) return;
+          dragging = true;
+          const rect = panelEl.getBoundingClientRect();
+          startX = e.clientX; startY = e.clientY;
+          startLeft = rect.left; startTop = rect.top;
+          panelEl.style.left = startLeft + 'px';
+          panelEl.style.top = startTop + 'px';
+          panelEl.style.right = 'auto';
+          panelEl.style.bottom = 'auto';
+          panelEl.style.transform = 'none';
+          // The base CSS has a transform/opacity transition for the open/
+          // close slide animation -- still active here since we're only
+          // overriding the transform value, not the transition itself,
+          // which would otherwise make dragging visibly lag the pointer
+          // instead of tracking it 1:1.
+          panelEl.style.transition = 'none';
+          handle.setPointerCapture(e.pointerId);
+        });
+        handle.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          const dx = e.clientX - startX, dy = e.clientY - startY;
+          const maxLeft = Math.max(0, window.innerWidth - panelEl.offsetWidth);
+          const maxTop = Math.max(0, window.innerHeight - panelEl.offsetHeight);
+          panelEl.style.left = THREE.MathUtils.clamp(startLeft + dx, 0, maxLeft) + 'px';
+          panelEl.style.top = THREE.MathUtils.clamp(startTop + dy, 0, maxTop) + 'px';
+        });
+        const endDrag = () => { dragging = false; panelEl.style.transition = ''; };
+        handle.addEventListener('pointerup', endDrag);
+        handle.addEventListener('pointercancel', endDrag);
+      }
+      if (collapseBtnEl) {
+        collapseBtnEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const collapsed = panelEl.classList.toggle('panel-collapsed');
+          collapseBtnEl.innerHTML = collapsed ? '&#43;' : '&#8722;';
+          collapseBtnEl.setAttribute('aria-label', collapsed ? 'Expand' : 'Collapse');
+        });
+      }
+    }
 
     function renderNotesFor(key) {
       const notes = DAY_NOTES[key] || [];
@@ -1878,6 +2300,7 @@ function getCalendarWalkHtml(
     function closeNotesPanel() { notesOpen = false; weekNotesModalEl.classList.remove('active'); }
     hudNotesBtn.addEventListener('click', openNotesPanel);
     notesCloseBtnEl.addEventListener('click', closeNotesPanel);
+    makePanelMoveableAndCollapsible(weekNotesModalEl, document.getElementById('notesCollapseBtn'));
 
     // ------------------------------------------------------------------
     // Tasks panel -- same "bound to whichever day you're standing on"
@@ -1891,6 +2314,11 @@ function getCalendarWalkHtml(
       } catch (e) {}
     }
 
+    function formatShortDate(iso) {
+      const d = new Date(iso + 'T00:00:00');
+      return MONTH_NAMES[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
+    }
+
     function renderTasksFor(key) {
       const tasks = DAY_TASKS[key] || [];
       if (tasks.length === 0) {
@@ -1899,24 +2327,46 @@ function getCalendarWalkHtml(
       }
       tasksListEl.innerHTML = tasks.map((t) => {
         const doneCount = t.decodedSteps.filter((s) => s.done).length;
+        const nextStep = t.decodedSteps.find((s) => !s.done);
+        const isExpanded = expandedTaskIds.has(t.id);
+        // Only the next undone step is called out by default (reduces the
+        // "wall of steps" overwhelm); the full list is one tap away behind
+        // the expand toggle, not hidden entirely.
         const stepsHtml = t.decodedSteps.map((s) => \`
-          <label class="task-step-row">
+          <label class="task-step-row\${(nextStep && s.id === nextStep.id) ? ' task-step-next' : ''}">
             <input type="checkbox" \${s.done ? 'checked' : ''} onchange="window.toggleTaskStep('\${key}','\${t.id}','\${s.id}')" />
             <span class="\${s.done ? 'task-step-done' : ''}">\${s.text.replace(/</g, '&lt;')}</span>
           </label>
         \`).join('');
+        const nextRowHtml = nextStep
+          ? \`<div class="task-next-row">
+              <span class="task-next-label">Next</span>
+              <span class="task-next-text">\${nextStep.text.replace(/</g, '&lt;')}</span>
+              <button class="task-focus-btn" onclick="window.startFocusSession('\${key}','\${t.id}')" type="button">Focus</button>
+            </div>\`
+          : '<div class="task-next-row task-all-done">All steps done! &#10024;</div>';
         return \`
           <div class="task-card">
             <div class="task-card-header">
               <div class="task-card-title">\${t.rawText.replace(/</g, '&lt;')}</div>
               <button class="note-del-btn" onclick="window.deleteTask('\${key}','\${t.id}')" title="Delete task">&times;</button>
             </div>
-            <div class="task-card-meta">~\${t.estimatedMinutes} min &middot; \${doneCount}/\${t.decodedSteps.length} steps &middot; \${t.status.replace('_', ' ')}</div>
-            <div class="task-steps">\${stepsHtml}</div>
+            <div class="task-card-meta">~\${t.estimatedMinutes} min &middot; \${doneCount}/\${t.decodedSteps.length} steps\${t.dueDateISO ? ' &middot; due ' + formatShortDate(t.dueDateISO) : ''}</div>
+            \${nextRowHtml}
+            <div class="task-card-actions">
+              \${t.decodedSteps.length > 1 ? \`<button class="task-expand-btn" onclick="window.toggleTaskExpanded('\${t.id}','\${key}')" type="button">\${isExpanded ? 'Hide steps' : 'Show all ' + t.decodedSteps.length + ' steps'}</button>\` : ''}
+              \${t.dueDateISO ? \`<button class="task-plan-btn" onclick="window.openStudyPlan('\${key}','\${t.id}')" type="button">Study plan</button>\` : ''}
+            </div>
+            \${isExpanded ? \`<div class="task-steps">\${stepsHtml}</div>\` : ''}
           </div>
         \`;
       }).join('');
     }
+
+    window.toggleTaskExpanded = function (taskId, key) {
+      if (expandedTaskIds.has(taskId)) expandedTaskIds.delete(taskId); else expandedTaskIds.add(taskId);
+      renderTasksFor(key);
+    };
 
     window.toggleTaskStep = function (key, taskId, stepId) {
       const list = DAY_TASKS[key] || [];
@@ -1928,6 +2378,7 @@ function getCalendarWalkHtml(
       task.status = computeTaskStatus(task);
       renderTasksFor(key);
       broadcastTasks();
+      refreshStudyMarkers();
     };
 
     window.deleteTask = function (key, taskId) {
@@ -1936,18 +2387,22 @@ function getCalendarWalkHtml(
       renderTasksFor(key);
       refreshHudForCurrentDay();
       broadcastTasks();
+      refreshStudyMarkers();
     };
 
     function addTaskForCurrentDay() {
       if (!currentDateKey) return;
       const text = taskInputEl.value.trim();
       if (!text) return;
+      const dueDateISO = taskDueInputEl && taskDueInputEl.value ? taskDueInputEl.value : null;
       if (!DAY_TASKS[currentDateKey]) DAY_TASKS[currentDateKey] = [];
-      DAY_TASKS[currentDateKey].push(createTask(currentDateKey, text));
+      DAY_TASKS[currentDateKey].push(createTask(currentDateKey, text, dueDateISO));
       taskInputEl.value = '';
+      if (taskDueInputEl) taskDueInputEl.value = '';
       renderTasksFor(currentDateKey);
       refreshHudForCurrentDay();
       broadcastTasks();
+      refreshStudyMarkers();
     }
     addTaskBtnEl.addEventListener('click', addTaskForCurrentDay);
     taskInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') addTaskForCurrentDay(); });
@@ -1963,6 +2418,187 @@ function getCalendarWalkHtml(
     function closeTasksPanel() { tasksOpen = false; dayTasksModalEl.classList.remove('active'); }
     hudTasksBtn.addEventListener('click', openTasksPanel);
     tasksCloseBtnEl.addEventListener('click', closeTasksPanel);
+    makePanelMoveableAndCollapsible(dayTasksModalEl, document.getElementById('tasksCollapseBtn'));
+
+    // ------------------------------------------------------------------
+    // Focus sessions: a short energy check-in, then a visible countdown
+    // timer tied to one task's next step. Completing (or stopping) it logs
+    // real minutes against that task's category, which is what lets
+    // getCategoryMultiplier() above learn the student's actual pace over
+    // time instead of relying purely on the rule-based baseline.
+    // ------------------------------------------------------------------
+    const FOCUS_FULL_MINUTES = 20;
+    const FOCUS_LOW_MINUTES = 8;
+    const focusEnergyPromptEl = document.getElementById('focusEnergyPrompt');
+    const focusEnergyTaskLabelEl = document.getElementById('focusEnergyTaskLabel');
+    const focusTimerEl = document.getElementById('focusTimerWidget');
+    const focusTimerLabelEl = document.getElementById('focusTimerLabel');
+    const focusTimerTimeEl = document.getElementById('focusTimerTime');
+    const focusTimerStopBtnEl = document.getElementById('focusTimerStopBtn');
+    const focusRewardToastEl = document.getElementById('focusRewardToast');
+    const focusRewardTextEl = document.getElementById('focusRewardText');
+
+    let pendingFocusRequest = null; // { key, taskId }
+    let activeFocusSession = null; // { key, taskId, categoryKey, estimatedMinutesForSession, totalSeconds, remainingSeconds, startedAt, intervalId }
+
+    window.startFocusSession = function (key, taskId) {
+      const task = (DAY_TASKS[key] || []).find((t) => t.id === taskId);
+      if (!task) return;
+      pendingFocusRequest = { key, taskId };
+      if (focusEnergyTaskLabelEl) focusEnergyTaskLabelEl.textContent = task.rawText;
+      if (focusEnergyPromptEl) focusEnergyPromptEl.classList.add('active');
+    };
+
+    function cancelFocusPrompt() {
+      pendingFocusRequest = null;
+      if (focusEnergyPromptEl) focusEnergyPromptEl.classList.remove('active');
+    }
+
+    function updateFocusTimerDisplay() {
+      if (!activeFocusSession || !focusTimerTimeEl) return;
+      const remaining = Math.max(0, activeFocusSession.remainingSeconds);
+      const mm = Math.floor(remaining / 60);
+      const ss = remaining % 60;
+      focusTimerTimeEl.textContent = mm + ':' + String(ss).padStart(2, '0');
+    }
+
+    function beginFocusCountdown(minutes) {
+      if (!pendingFocusRequest) return;
+      const { key, taskId } = pendingFocusRequest;
+      const task = (DAY_TASKS[key] || []).find((t) => t.id === taskId);
+      cancelFocusPrompt();
+      if (!task) return;
+      if (activeFocusSession) clearInterval(activeFocusSession.intervalId);
+      const totalSeconds = Math.round(minutes * 60);
+      activeFocusSession = {
+        key, taskId, categoryKey: task.categoryKey, estimatedMinutesForSession: minutes,
+        totalSeconds, remainingSeconds: totalSeconds, startedAt: Date.now(), intervalId: null,
+      };
+      if (focusTimerLabelEl) focusTimerLabelEl.textContent = task.rawText.length > 30 ? task.rawText.slice(0, 30) + '...' : task.rawText;
+      if (focusTimerEl) focusTimerEl.classList.add('active');
+      updateFocusTimerDisplay();
+      activeFocusSession.intervalId = setInterval(() => {
+        if (!activeFocusSession) return;
+        activeFocusSession.remainingSeconds--;
+        updateFocusTimerDisplay();
+        if (activeFocusSession.remainingSeconds <= 0) completeFocusSession(true);
+      }, 1000);
+    }
+
+    function showRewardToast(message) {
+      if (!focusRewardToastEl) return;
+      if (focusRewardTextEl) focusRewardTextEl.textContent = message;
+      focusRewardToastEl.classList.add('active');
+      setTimeout(() => focusRewardToastEl.classList.remove('active'), 2200);
+    }
+    function spawnFocusCompleteReward(minutesLogged) {
+      showRewardToast('Nice work! ' + minutesLogged + ' min logged.');
+    }
+
+    function completeFocusSession(finishedNaturally) {
+      const s = activeFocusSession;
+      if (!s) return;
+      clearInterval(s.intervalId);
+      const actualMinutes = Math.max(0.5, Math.round(((Date.now() - s.startedAt) / 60000) * 10) / 10);
+      const task = (DAY_TASKS[s.key] || []).find((t) => t.id === s.taskId);
+      if (task) {
+        task.loggedMinutes = Math.round((task.loggedMinutes || 0) + actualMinutes);
+        recordFocusSessionOutcome(s.categoryKey, s.estimatedMinutesForSession, actualMinutes);
+        broadcastTasks();
+      }
+      if (focusTimerEl) focusTimerEl.classList.remove('active');
+      activeFocusSession = null;
+      if (finishedNaturally) spawnFocusCompleteReward(Math.round(actualMinutes));
+      if (currentDateKey === s.key) renderTasksFor(s.key);
+    }
+
+    const focusEnergyFullBtnEl = document.getElementById('focusEnergyFullBtn');
+    const focusEnergyLowBtnEl = document.getElementById('focusEnergyLowBtn');
+    const focusEnergyCancelBtnEl = document.getElementById('focusEnergyCancelBtn');
+    if (focusEnergyFullBtnEl) focusEnergyFullBtnEl.addEventListener('click', () => beginFocusCountdown(FOCUS_FULL_MINUTES));
+    if (focusEnergyLowBtnEl) focusEnergyLowBtnEl.addEventListener('click', () => beginFocusCountdown(FOCUS_LOW_MINUTES));
+    if (focusEnergyCancelBtnEl) focusEnergyCancelBtnEl.addEventListener('click', cancelFocusPrompt);
+    if (focusTimerStopBtnEl) focusTimerStopBtnEl.addEventListener('click', () => completeFocusSession(false));
+
+    // ------------------------------------------------------------------
+    // Study plan: a per-task, separate full-window mind map that answers
+    // WHEN and roughly HOW MUCH time to spend, never HOW to do the work --
+    // that stays entirely in the task's own step list. Center node is the
+    // task/submission; branches are day-segments between today and the due
+    // date, each carrying just a date and a rough minute budget. Time is
+    // spread as "little and often" rather than front- or back-loaded, and
+    // the final day is always reserved as a light buffer/review block
+    // (helpful for exam-style anxiety around a hard deadline).
+    // ------------------------------------------------------------------
+    const studyPlanOverlayEl = document.getElementById('studyPlanOverlay');
+    const studyPlanTitleEl = document.getElementById('studyPlanTitle');
+    const studyPlanDueEl = document.getElementById('studyPlanDue');
+    const studyPlanCanvasEl = document.getElementById('studyPlanCanvas');
+    const studyPlanBackBtnEl = document.getElementById('studyPlanBackBtn');
+
+    function buildStudyPlanNodes(task) {
+      const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+      const due = new Date(task.dueDateISO + 'T00:00:00');
+      const msPerDay = 86400000;
+      let totalDays = Math.round((due - today) / msPerDay) + 1;
+      if (totalDays < 1) totalDays = 1;
+
+      const remainingEstimate = Math.max(10, task.estimatedMinutes - (task.loggedMinutes || 0));
+      const nodes = [];
+      if (totalDays === 1) {
+        nodes.push({ dateOffset: 0, label: 'Final review & submit', minutes: remainingEstimate, isFinal: true });
+        return nodes;
+      }
+      const finalMinutes = Math.max(10, Math.round(remainingEstimate * 0.12 / 5) * 5);
+      const workDays = totalDays - 1;
+      const perDay = Math.max(10, Math.round((remainingEstimate - finalMinutes) / workDays / 5) * 5);
+      for (let i = 0; i < workDays; i++) {
+        nodes.push({ dateOffset: i, label: 'Study session ' + (i + 1), minutes: perDay, isFinal: false });
+      }
+      nodes.push({ dateOffset: workDays, label: 'Final review & submit', minutes: finalMinutes, isFinal: true });
+      return nodes;
+    }
+
+    function renderStudyPlan(task) {
+      if (studyPlanTitleEl) studyPlanTitleEl.textContent = task.rawText;
+      if (studyPlanDueEl) studyPlanDueEl.textContent = 'Due ' + formatShortDate(task.dueDateISO) + ' -- a timing guide only, not instructions';
+      if (!studyPlanCanvasEl) return;
+
+      const nodes = buildStudyPlanNodes(task);
+      const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+      const cx = 50, cy = 50, radius = 36;
+      const svgLines = [];
+      const nodeHtml = nodes.map((n, i) => {
+        const angle = (-Math.PI / 2) + (nodes.length > 1 ? (i / nodes.length) * Math.PI * 2 : 0);
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        svgLines.push('<line x1="' + cx + '%" y1="' + cy + '%" x2="' + x + '%" y2="' + y + '%" stroke="var(--cal-modal-border)" stroke-width="1.5" vector-effect="non-scaling-stroke" />');
+        const d = addDays(today, n.dateOffset);
+        const dayLabel = WEEKDAYS[d.getDay()].slice(0, 3) + ' ' + MONTH_NAMES[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
+        return '<div class="study-plan-node' + (n.isFinal ? ' is-final' : '') + '" style="left:' + x + '%; top:' + y + '%;">' +
+          '<div class="study-plan-node-day">' + dayLabel + '</div>' +
+          '<div class="study-plan-node-label">' + n.label + '</div>' +
+          '<div class="study-plan-node-minutes">~' + n.minutes + ' min</div>' +
+        '</div>';
+      }).join('');
+
+      studyPlanCanvasEl.innerHTML =
+        '<svg class="study-plan-lines" viewBox="0 0 100 100" preserveAspectRatio="none">' + svgLines.join('') + '</svg>' +
+        '<div class="study-plan-center" style="left:' + cx + '%; top:' + cy + '%;">' +
+          '<div>' + task.rawText.replace(/</g, '&lt;').slice(0, 60) + '</div>' +
+        '</div>' +
+        nodeHtml;
+    }
+
+    window.openStudyPlan = function (key, taskId) {
+      const task = (DAY_TASKS[key] || []).find((t) => t.id === taskId);
+      if (!task || !task.dueDateISO || !studyPlanOverlayEl) return;
+      renderStudyPlan(task);
+      studyPlanOverlayEl.classList.add('active');
+    };
+    if (studyPlanBackBtnEl) studyPlanBackBtnEl.addEventListener('click', () => {
+      if (studyPlanOverlayEl) studyPlanOverlayEl.classList.remove('active');
+    });
 
     // Crystal size/glow controls (persisted per-student)
     (function initCrystalControls() {
