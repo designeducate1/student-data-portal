@@ -218,145 +218,120 @@ function getCalendarWalkHtml(
     .task-step-row input[type="checkbox"] { accent-color: #d68a1e; width: 15px; height: 15px; cursor: pointer; }
     .task-step-done { text-decoration: line-through; opacity: 0.55; }
 
-    /* Sequential Month Circle Rail (Favicon-like Selector) */
-    #monthSideRail {
+    /* Month launcher: one circular button, replacing the always-visible
+       month rail, that opens a separate full-window month-grid picker
+       (TikTok profile-grid styling) instead of sitting in the 3D view. */
+    #monthLauncherBtn {
       position: absolute;
       right: 14px;
       top: 50%;
       transform: translateY(-50%);
       z-index: 28;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1.5px solid var(--cal-surface-border);
+      background: var(--cal-accent);
+      color: #ffffff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
-      background: var(--cal-surface);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1.5px solid var(--cal-surface-border);
-      border-radius: 28px;
-      padding: 8px 6px;
+      justify-content: center;
+      gap: 1px;
+      cursor: pointer;
       box-shadow: var(--cal-shadow);
-      max-height: 92vh;
-      overflow-y: auto;
-      scrollbar-width: none;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       user-select: none;
     }
-    #monthSideRail::-webkit-scrollbar { display: none; }
-    .month-rail-year-row {
+    #monthLauncherBtn:hover { transform: translateY(-50%) scale(1.08); }
+    #monthLauncherBtn:active { transform: translateY(-50%) scale(0.94); }
+    #monthLauncherBtn .launcher-icon { font-size: 15px; line-height: 1; }
+    #monthLauncherBtn .launcher-abbr { font-size: 9px; font-weight: 800; letter-spacing: 0.02em; }
+
+    /* Month grid picker -- a separate full-window overlay, styled after a
+       TikTok profile's video grid: bold rounded tiles, a caption chip
+       overlaid at the bottom, a small red "pinned"-style badge for the
+       month currently showing in the 3D view. */
+    #monthGridOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: var(--cal-modal-surface);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      display: flex;
+      flex-direction: column;
+      color: var(--cal-modal-text);
+    }
+    #monthGridOverlay.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .month-grid-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
-      padding: 0 2px 4px 2px;
+      padding: 16px 16px 12px 16px;
       border-bottom: 1px solid var(--cal-modal-border);
-      margin-bottom: 2px;
-    }
-    .month-rail-year-btn {
-      background: transparent;
-      border: none;
-      color: var(--cal-text-muted);
-      font-size: 10px;
-      cursor: pointer;
-      padding: 2px 4px;
-      border-radius: 6px;
-      font-weight: 800;
-      line-height: 1;
-      transition: background 0.15s, color 0.15s;
-    }
-    .month-rail-year-btn:hover {
-      background: rgba(0, 0, 0, 0.08);
-      color: var(--cal-accent);
-    }
-    .month-rail-year-label {
-      font-size: 11px;
-      font-weight: 800;
-      font-family: var(--font-display);
-      color: var(--cal-text);
-      letter-spacing: -0.02em;
-    }
-    .month-rail-circles {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 5px;
-    }
-    .month-circle-btn {
-      position: relative;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 1.5px solid transparent;
-      background: rgba(127, 127, 127, 0.1);
-      color: var(--cal-text-muted);
-      font-size: 10px;
-      font-weight: 800;
-      font-family: var(--font-body);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      outline: none;
-      user-select: none;
       flex-shrink: 0;
     }
-    .month-circle-btn:hover {
-      background: rgba(60, 90, 107, 0.18);
-      color: var(--cal-accent);
-      transform: scale(1.14);
-      border-color: var(--cal-accent);
+    .month-grid-back {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: none; background: rgba(127, 127, 127, 0.12);
+      color: var(--cal-modal-text); font-size: 16px; font-weight: 800;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    .month-circle-btn:active {
-      transform: scale(0.95);
+    .month-grid-title { font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: -0.02em; }
+    .month-grid-year-row { display: flex; align-items: center; gap: 10px; }
+    .month-rail-year-btn {
+      background: transparent; border: none; color: var(--cal-text-muted);
+      font-size: 13px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+      font-weight: 800; line-height: 1; transition: background 0.15s, color 0.15s;
     }
-    .month-circle-btn.active {
-      background: var(--cal-accent);
-      color: #ffffff;
-      font-weight: 900;
-      transform: scale(1.16);
-      box-shadow: 0 4px 12px rgba(60, 90, 107, 0.35);
-      border-color: #ffffff;
+    .month-rail-year-btn:hover { background: rgba(0, 0, 0, 0.08); color: var(--cal-accent); }
+    .month-rail-year-label { font-size: 14px; font-weight: 800; font-family: var(--font-display); color: var(--cal-text); letter-spacing: -0.02em; }
+    .month-grid {
+      flex: 1;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      padding: 3px;
     }
-    .month-circle-btn.is-current-month::after {
-      content: '';
-      position: absolute;
-      bottom: 0px;
-      right: 0px;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #10b981;
-      border: 1.5px solid var(--cal-modal-surface);
+    .month-grid-tile {
+      position: relative;
+      aspect-ratio: 3 / 4;
+      border: none;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: flex-end;
+      background: linear-gradient(160deg, var(--tile-a), var(--tile-b));
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .month-circle-btn .month-tooltip {
-      position: absolute;
-      right: calc(100% + 10px);
-      top: 50%;
-      transform: translateY(-50%);
-      background: var(--cal-modal-surface);
-      color: var(--cal-modal-text);
-      border: 1px solid var(--cal-modal-border);
-      border-radius: 10px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 700;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.18s, transform 0.18s;
-      box-shadow: var(--cal-shadow);
-      z-index: 40;
+    .month-grid-tile:active { transform: scale(0.96); }
+    .month-grid-tile.is-standing-month { outline: 2.5px solid #ffffff; outline-offset: -2.5px; }
+    .month-grid-tile-pin {
+      position: absolute; top: 6px; left: 6px;
+      background: #fe2c55; color: #ffffff; font-size: 9px; font-weight: 800;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.02em;
     }
-    .month-circle-btn:hover .month-tooltip {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(-50%) translateX(-4px);
+    .month-grid-tile-caption {
+      width: 100%; padding: 8px 7px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.55), rgba(0,0,0,0));
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .month-grid-tile-name {
+      color: #ffffff; font-family: var(--font-display); font-weight: 800;
+      font-size: 13px; letter-spacing: -0.01em; text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .month-grid-tile-meta {
+      color: rgba(255,255,255,0.85); font-size: 10px; font-weight: 600;
+      display: flex; align-items: center; gap: 3px;
     }
     @media (max-height: 640px) {
-      #monthSideRail { gap: 3px; padding: 6px 4px; }
-      .month-rail-circles { gap: 3px; }
-      .month-circle-btn { width: 27px; height: 27px; font-size: 9px; }
+      #monthLauncherBtn { width: 44px; height: 44px; }
     }
   </style>
 </head>
@@ -365,14 +340,23 @@ function getCalendarWalkHtml(
   <div class="canvas-wrapper">
     <canvas id="scene-canvas"></canvas>
 
-    <!-- Sequential Month Circle Rail -->
-    <div id="monthSideRail" aria-label="Month selector">
-      <div class="month-rail-year-row">
-        <button class="month-rail-year-btn" id="prevYearBtn" title="Previous Year" type="button">&lt;</button>
-        <span class="month-rail-year-label" id="railYearLabel">2026</span>
-        <button class="month-rail-year-btn" id="nextYearBtn" title="Next Year" type="button">&gt;</button>
+    <!-- Month launcher: single button opening a separate month-grid window -->
+    <button id="monthLauncherBtn" aria-label="Choose month" type="button">
+      <span class="launcher-icon">&#128197;</span>
+      <span class="launcher-abbr" id="monthLauncherAbbr">--</span>
+    </button>
+
+    <div id="monthGridOverlay" aria-label="Month picker">
+      <div class="month-grid-header">
+        <button class="month-grid-back" id="monthGridBackBtn" type="button" aria-label="Close">&lt;</button>
+        <span class="month-grid-title">Choose a Month</span>
+        <div class="month-grid-year-row">
+          <button class="month-rail-year-btn" id="prevYearBtn" title="Previous Year" type="button">&lt;</button>
+          <span class="month-rail-year-label" id="railYearLabel">2026</span>
+          <button class="month-rail-year-btn" id="nextYearBtn" title="Next Year" type="button">&gt;</button>
+        </div>
       </div>
-      <div class="month-rail-circles" id="monthRailCircles"></div>
+      <div class="month-grid" id="monthGrid"></div>
     </div>
 
     <div id="dayLabel">
@@ -1366,7 +1350,11 @@ function getCalendarWalkHtml(
         const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, transparent: true });
         const faceMesh = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W * 0.96, CARD_D_SIZE * 0.96), faceMat);
         faceMesh.rotation.x = -Math.PI / 2;
-        faceMesh.position.set(x, CARD_TOP_Y + 1.08, z);
+        // Was CARD_TOP_Y + 1.08, tuned back when CARD_H made cards ~0.35
+        // units tall. Cards are flush with the plinth now, so that fixed
+        // offset left the visible day-number face floating well above the
+        // ground -- drop it to just clear the card's own surface.
+        faceMesh.position.set(x, CARD_TOP_Y + 0.06, z);
         group.add(faceMesh);
 
         const crystalGroup = new THREE.Group();
@@ -1451,7 +1439,7 @@ function getCalendarWalkHtml(
       const dur = FLIP_DURATION[ACTIVE_THEME.flip] || 0.7;
       flipState = { direction, t: 0, duration: dur };
       spawnFlipFlourish();
-      updateMonthRailActive(targetYear, targetMonth);
+      updateMonthLauncher(targetYear, targetMonth);
     }
 
     function startFlip(direction) {
@@ -1495,7 +1483,7 @@ function getCalendarWalkHtml(
           characterParent.position.z = direction > 0 ? boundMinZ + 1 : boundMaxZ - 1;
           characterParent.position.x = THREE.MathUtils.clamp(characterParent.position.x, boundMinX, boundMaxX);
         }
-        updateMonthRailActive(currentPage.year, currentPage.month);
+        updateMonthLauncher(currentPage.year, currentPage.month);
         currentDateKey = null;
         updateHudForPosition(characterParent.position.x, characterParent.position.z);
       }
@@ -1615,7 +1603,7 @@ function getCalendarWalkHtml(
       // mesh extends a bit below and around it, so landing the joint
       // exactly on the floor still buries the visible sole. Lift a little
       // further so the sole itself rests on the surface.
-      const FOOT_SOLE_CLEARANCE = 0.9;
+      const FOOT_SOLE_CLEARANCE = 1.4;
       characterRoot.position.y -= groundY - FOOT_SOLE_CLEARANCE;
 
       characterRoot.updateMatrixWorld(true);
@@ -1694,7 +1682,7 @@ function getCalendarWalkHtml(
         currentPage.group.rotation.set(0, 0, 0);
         stage.add(currentPage.group);
         syncPageCrystals(currentPage, false);
-        updateMonthRailActive(TODAY.getFullYear(), TODAY.getMonth());
+        updateMonthLauncher(TODAY.getFullYear(), TODAY.getMonth());
       }
       isAutoWalkingToToday = true;
       turnAroundTarget = null;
@@ -1719,11 +1707,11 @@ function getCalendarWalkHtml(
 
     const touchStart = { x: 0, y: 0 };
     window.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
       const t = e.touches[0]; touchStart.x = t.clientX; touchStart.y = t.clientY; hideTutorial();
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
       e.preventDefault();
       isAutoWalkingToToday = false;
       const t = e.touches[0];
@@ -1735,7 +1723,7 @@ function getCalendarWalkHtml(
       movement.left = jx < -0.3; movement.right = jx > 0.3; movement.forward = jy < -0.3; movement.backward = jy > 0.3;
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
       movement.left = movement.right = movement.forward = movement.backward = false;
     }, { passive: true });
 
@@ -1760,12 +1748,12 @@ function getCalendarWalkHtml(
       return false;
     }
     window.addEventListener('dblclick', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
       if (checkCharacterHit(e.clientX, e.clientY)) triggerWalkToToday();
     });
     let lastTouchTapTime = 0, lastTouchTapX = 0, lastTouchTapY = 0;
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) return;
       const now = Date.now();
       const touch = e.changedTouches && e.changedTouches[0];
       if (touch) {
@@ -1776,7 +1764,7 @@ function getCalendarWalkHtml(
       }
     }, { passive: true });
     window.addEventListener('mousemove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthSideRail')) { canvas.style.cursor = 'default'; return; }
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay')) { canvas.style.cursor = 'default'; return; }
       canvas.style.cursor = checkCharacterHit(e.clientX, e.clientY) ? 'pointer' : 'default';
     });
     function hideTutorial() { const el = document.getElementById('tutorialWrapper'); if (el) el.style.display = 'none'; }
@@ -2002,65 +1990,103 @@ function getCalendarWalkHtml(
     })();
 
     // ------------------------------------------------------------------
-    // Month Side Rail (Sequential Circular Month Favicon-like Icons)
+    // Month picker: one launcher button opens a separate full-window grid
+    // (TikTok profile-grid styling) instead of an always-visible in-scene
+    // rail. Picking a tile closes the grid and flips to that month in the
+    // 3D environment via the existing jumpToMonth transition.
     // ------------------------------------------------------------------
-    const monthRailCirclesEl = document.getElementById('monthRailCircles');
+    const monthLauncherBtnEl = document.getElementById('monthLauncherBtn');
+    const monthLauncherAbbrEl = document.getElementById('monthLauncherAbbr');
+    const monthGridOverlayEl = document.getElementById('monthGridOverlay');
+    const monthGridEl = document.getElementById('monthGrid');
+    const monthGridBackBtnEl = document.getElementById('monthGridBackBtn');
     const railYearLabelEl = document.getElementById('railYearLabel');
     const prevYearBtnEl = document.getElementById('prevYearBtn');
     const nextYearBtnEl = document.getElementById('nextYearBtn');
     let displayedRailYear = currentPage.year;
 
-    function renderMonthRail(year, activeMonth) {
-      if (!monthRailCirclesEl) return;
+    // A distinct gradient per month so tiles read as a real grid of
+    // destinations rather than 12 identical cards, without pulling in any
+    // per-month imagery.
+    const MONTH_TILE_GRADIENTS = [
+      ['#3a4a63', '#232c3d'], ['#5a3a63', '#33212e'], ['#3a6355', '#1f3830'],
+      ['#63583a', '#3a2f19'], ['#3a5f63', '#1c3336'], ['#553a63', '#2e1e39'],
+      ['#63423a', '#3a2016'], ['#3a4763', '#1e2537'], ['#3a6350', '#1a3628'],
+      ['#5e633a', '#33361c'], ['#63483a', '#3a271b'], ['#3a5163', '#1c2b37'],
+    ];
+
+    function openMonthGrid() {
+      if (!monthGridOverlayEl) return;
+      displayedRailYear = currentPage.year;
+      renderMonthGrid(displayedRailYear, currentPage.month);
+      monthGridOverlayEl.classList.add('active');
+    }
+    function closeMonthGrid() {
+      if (monthGridOverlayEl) monthGridOverlayEl.classList.remove('active');
+    }
+
+    function renderMonthGrid(year, standingMonth) {
+      if (!monthGridEl) return;
       if (railYearLabelEl) railYearLabelEl.textContent = String(year);
       displayedRailYear = year;
 
       let html = '';
       for (let m = 0; m < 12; m++) {
-        const isCurrentActive = (currentPage.year === year && currentPage.month === m);
+        const isStandingMonth = (currentPage.year === year && currentPage.month === m);
         const isCurrentTodayMonth = (TODAY.getFullYear() === year && TODAY.getMonth() === m);
-        const monthShort = MONTH_NAMES[m].slice(0, 3).toUpperCase();
         const monthFull = MONTH_NAMES[m];
+        const dayCount = new Date(year, m + 1, 0).getDate();
+        const [colorA, colorB] = MONTH_TILE_GRADIENTS[m];
 
-        html += '<button class="month-circle-btn' + (isCurrentActive ? ' active' : '') + (isCurrentTodayMonth ? ' is-current-month' : '') + '" data-month="' + m + '" data-year="' + year + '" type="button" title="' + monthFull + ' ' + year + '">' +
-          '<span class="month-abbr">' + monthShort + '</span>' +
-          '<span class="month-tooltip">' + monthFull + ' ' + year + '</span>' +
+        html += '<button class="month-grid-tile' + (isStandingMonth ? ' is-standing-month' : '') + '" style="--tile-a:' + colorA + ';--tile-b:' + colorB + '" data-month="' + m + '" data-year="' + year + '" type="button" title="' + monthFull + ' ' + year + '">' +
+          (isCurrentTodayMonth ? '<span class="month-grid-tile-pin">Today</span>' : '') +
+          '<span class="month-grid-tile-caption">' +
+            '<span class="month-grid-tile-name">' + monthFull + '</span>' +
+            '<span class="month-grid-tile-meta">' + dayCount + ' days</span>' +
+          '</span>' +
         '</button>';
       }
-      monthRailCirclesEl.innerHTML = html;
+      monthGridEl.innerHTML = html;
 
-      const btns = monthRailCirclesEl.querySelectorAll('.month-circle-btn');
-      btns.forEach((btn) => {
-        btn.addEventListener('click', (e) => {
+      const tiles = monthGridEl.querySelectorAll('.month-grid-tile');
+      tiles.forEach((tile) => {
+        tile.addEventListener('click', (e) => {
           e.stopPropagation();
-          const targetM = parseInt(btn.getAttribute('data-month'), 10);
-          const targetY = parseInt(btn.getAttribute('data-year'), 10);
+          const targetM = parseInt(tile.getAttribute('data-month'), 10);
+          const targetY = parseInt(tile.getAttribute('data-year'), 10);
+          closeMonthGrid();
           jumpToMonth(targetY, targetM);
         });
       });
     }
 
-    function updateMonthRailActive(year, month) {
+    function updateMonthLauncher(year, month) {
       displayedRailYear = year;
-      renderMonthRail(year, month);
+      if (monthLauncherAbbrEl) monthLauncherAbbrEl.textContent = MONTH_NAMES[month].slice(0, 3).toUpperCase();
     }
 
+    if (monthLauncherBtnEl) {
+      monthLauncherBtnEl.addEventListener('click', (e) => { e.stopPropagation(); openMonthGrid(); });
+    }
+    if (monthGridBackBtnEl) {
+      monthGridBackBtnEl.addEventListener('click', (e) => { e.stopPropagation(); closeMonthGrid(); });
+    }
     if (prevYearBtnEl) {
       prevYearBtnEl.addEventListener('click', (e) => {
         e.stopPropagation();
         displayedRailYear--;
-        renderMonthRail(displayedRailYear, currentPage.year === displayedRailYear ? currentPage.month : -1);
+        renderMonthGrid(displayedRailYear, currentPage.year === displayedRailYear ? currentPage.month : -1);
       });
     }
     if (nextYearBtnEl) {
       nextYearBtnEl.addEventListener('click', (e) => {
         e.stopPropagation();
         displayedRailYear++;
-        renderMonthRail(displayedRailYear, currentPage.year === displayedRailYear ? currentPage.month : -1);
+        renderMonthGrid(displayedRailYear, currentPage.year === displayedRailYear ? currentPage.month : -1);
       });
     }
 
-    renderMonthRail(currentPage.year, currentPage.month);
+    updateMonthLauncher(currentPage.year, currentPage.month);
 
     function updateHudForPosition(x, z) {
       const col = Math.round((x + GRID_W / 2) / CELL - 0.5);
