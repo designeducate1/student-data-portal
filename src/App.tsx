@@ -16,6 +16,30 @@ const API_URL = 'https://script.google.com/macros/s/AKfycby4OkFc3mZw4fVzQVrsLEts
 const API_KEY = '1WobiYnZuLTdNrErTvStrw-iVDYy_sIgnw92dhI4TOZuOIXZ-tKxCwRGh';
 const EMAIL_API_URL = 'https://script.google.com/macros/s/AKfycby4OkFc3mZw4fVzQVrsLEtsjSkIZjwEGLmZr7n-QIJpPDH_6Lmp-sfCi4b7uUpS2M8B/exec';
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// The Apps Script exec endpoint has a real cold start: the first request
+// after it's been idle regularly comes back slow, or as an HTML interstitial
+// instead of JSON (which throws on .json() immediately, not from waiting
+// too long) -- then the very next attempt succeeds instantly. A single
+// fetch surfaced that as a login failure on essentially every user's first
+// try. Retry quietly a couple of times before treating it as a real error.
+async function fetchJsonWithRetry(url: string, attempts = 3, delayMs = 1200): Promise<any> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const res = await fetch(url);
+      return await res.json();
+    } catch (e) {
+      lastError = e;
+      if (attempt < attempts - 1) await sleep(delayMs);
+    }
+  }
+  throw lastError;
+}
+
 export default function StudentPortalApp() {
   // --- UI & THEME STATE ---
   const [currentTime, setCurrentTime] = useState('9:41');
@@ -279,8 +303,7 @@ export default function StudentPortalApp() {
 
     try {
       const url = `${API_URL}?studentId=${encodeURIComponent(loginId.trim())}&key=${API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      const data = await fetchJsonWithRetry(url);
 
       if (data && data.length > 0) {
         const firstRow = data[0];
