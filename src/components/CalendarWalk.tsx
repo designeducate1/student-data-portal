@@ -458,7 +458,11 @@ function getCalendarWalkHtml(
     const GRID_W = GRID_COLS * CELL;
     const GRID_D = GRID_ROWS * CELL;
     const HINGE_Z = GRID_D;
-    const CARD_W = 16.4, CARD_D_SIZE = 16.4, CARD_H = 0.35;
+    // CARD_H used to raise date cards 0.35 units above the plinth for visual
+    // definition, but that step (plus the near-zero gap between cards) made
+    // the avatar's feet visibly clip in and out at every seam while
+    // walking a row. Flush with the plinth instead -- flat, not stepped.
+    const CARD_W = 16.4, CARD_D_SIZE = 16.4, CARD_H = 0.02;
     const CHARACTER_SPEED = 16;
     const TURN_SPEED = 2.4;
     const TARGET_FPS = 60;
@@ -882,7 +886,7 @@ function getCalendarWalkHtml(
     function getCardBoxGeometry() {
       if (cardBoxGeoCache) return cardBoxGeoCache;
       const shape = roundedRectShape(CARD_W, CARD_D_SIZE, 1.6);
-      const geo = new THREE.ExtrudeGeometry(shape, { depth: CARD_H, bevelEnabled: true, bevelThickness: 0.08, bevelSize: 0.08, bevelSegments: 2, curveSegments: 6 });
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: CARD_H, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 6 });
       geo.rotateX(-Math.PI / 2);
       geo.translate(0, PLINTH_TOP_Y, 0);
       geo.computeBoundingBox();
@@ -1611,7 +1615,7 @@ function getCalendarWalkHtml(
       // mesh extends a bit below and around it, so landing the joint
       // exactly on the floor still buries the visible sole. Lift a little
       // further so the sole itself rests on the surface.
-      const FOOT_SOLE_CLEARANCE = 0.3;
+      const FOOT_SOLE_CLEARANCE = 0.9;
       characterRoot.position.y -= groundY - FOOT_SOLE_CLEARANCE;
 
       characterRoot.updateMatrixWorld(true);
