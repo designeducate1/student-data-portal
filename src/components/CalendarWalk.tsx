@@ -111,13 +111,21 @@ function getCalendarWalkHtml(
     }
 
     #dayLabel {
-      position: absolute; top: 18px; left: 50%; transform: translateX(-50%); z-index: 25;
+      /* Was top: 18px -- that sat directly behind the host app's own
+         header/toolbar (back button, student name, Close 3D/2D/Aa/Export),
+         which renders above this iframe and made the top of the card dead
+         space. Starts clear of that chrome now, and is drag-repositionable
+         (see .hud-drag-handle) if a given screen still needs it moved. */
+      position: absolute; top: 128px; left: 50%; transform: translateX(-50%); z-index: 25;
       width: min(92vw, 560px); background: var(--cal-surface);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border: 1.5px solid var(--cal-surface-border); border-radius: 20px; padding: 14px 22px;
+      border: 1.5px solid var(--cal-surface-border); border-radius: 20px; padding: 6px 22px 14px;
       box-shadow: var(--cal-shadow); pointer-events: auto; cursor: default;
       transition: background 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; gap: 8px;
     }
+    .hud-drag-handle { display: flex; justify-content: center; padding: 6px 0 2px 0; cursor: grab; touch-action: none; }
+    .hud-drag-handle:active { cursor: grabbing; }
+    .hud-drag-bar { width: 36px; height: 4px; border-radius: 4px; background: var(--cal-surface-border); }
     .hud-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .hud-date-row { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display); }
     .hud-date-row span:first-child { font-size: 12px; color: var(--cal-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -196,22 +204,26 @@ function getCalendarWalkHtml(
       background: transparent; border: none; color: var(--cal-text-muted); font-size: 13px; font-weight: 700;
       cursor: pointer; padding: 2px 6px;
     }
-    .notes-collapse-btn {
+    .notes-collapse-btn, .hud-collapse-btn {
       background: rgba(127,127,127,0.12); border: none; color: var(--cal-modal-text); font-size: 14px; font-weight: 800;
       cursor: pointer; width: 22px; height: 22px; border-radius: 50%; line-height: 1;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .notes-collapse-btn:hover { background: rgba(127,127,127,0.22); }
+    .notes-collapse-btn:hover, .hud-collapse-btn:hover { background: rgba(127,127,127,0.22); }
 
-    /* Notes/Tasks panels are moveable (drag the header) and collapsible
-       (header stays, body hides) rather than fixed in place -- useful for
-       keeping them out of the way of the walkable 3D view underneath. */
+    /* Notes/Tasks/Standing-on panels are moveable (drag the header) and
+       collapsible (header stays, body hides) rather than fixed in place --
+       useful for keeping them out of the way of the walkable 3D view
+       underneath. The Standing-on panel starts collapsed by default (see
+       its init call) so it reads as a glanceable pill rather than a
+       persistent card competing with the 3D scene for attention. */
     .panel-drag-handle { cursor: grab; touch-action: none; }
     .panel-drag-handle:active { cursor: grabbing; }
     .panel-drag-grip { color: var(--cal-text-muted); font-size: 12px; letter-spacing: -2px; margin-right: 2px; }
     .panel-body { display: flex; flex-direction: column; gap: 10px; }
     #weekNotesModal.panel-collapsed .panel-body,
-    #dayTasksModal.panel-collapsed .panel-body { display: none; }
+    #dayTasksModal.panel-collapsed .panel-body,
+    #dayLabel.panel-collapsed .panel-body { display: none; }
     #weekNotesModal.panel-collapsed,
     #dayTasksModal.panel-collapsed { gap: 0; padding-bottom: 10px; }
 
@@ -486,15 +498,21 @@ function getCalendarWalkHtml(
     </div>
 
     <div id="dayLabel">
+      <div class="hud-drag-handle panel-drag-handle" aria-hidden="true"><span class="hud-drag-bar"></span></div>
       <div class="hud-header">
         <div class="hud-date-row">
           <span>Standing on</span>
           <span id="dayValue">--</span>
         </div>
-        <span class="hud-badge" id="hudBadge">Active Tile</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="hud-badge" id="hudBadge">Active Tile</span>
+          <button class="hud-collapse-btn" id="hudCollapseBtn" type="button" aria-label="Expand">&#43;</button>
+        </div>
       </div>
-      <div class="hud-task-row">
-        <span id="hudTask">Walk across your calendar to explore dates and events.</span>
+      <div class="panel-body">
+        <div class="hud-task-row" id="hudTaskRow">
+          <span id="hudTask"></span>
+        </div>
       </div>
       <div class="hud-btn-row">
         <button class="hud-notes-btn" id="hudNotesBtn" type="button">
@@ -994,8 +1012,12 @@ function getCalendarWalkHtml(
     scene.background = new THREE.Color(WORLD_COLOR);
     scene.fog = new THREE.Fog(WORLD_COLOR, 140, 260);
 
-    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 500);
-    const cameraOffset = new THREE.Vector3(0, 34, 52);
+    // Widened FOV and a further-back/higher follow offset than before (was
+    // 58deg / (0,34,52)) -- the old framing felt tightly zoomed in on the
+    // character, leaving little breathing room around the HUD panels
+    // layered on top of the scene.
+    const camera = new THREE.PerspectiveCamera(64, window.innerWidth / window.innerHeight, 0.1, 500);
+    const cameraOffset = new THREE.Vector3(0, 42, 66);
     camera.position.copy(cameraOffset);
     camera.lookAt(0, 6, 40);
 
@@ -2144,9 +2166,17 @@ function getCalendarWalkHtml(
     // currently stands on. No separate day-picker: walking there is how
     // you pick the date.
     // ------------------------------------------------------------------
+    const dayLabelEl = document.getElementById('dayLabel');
+    makePanelMoveableAndCollapsible(dayLabelEl, document.getElementById('hudCollapseBtn'));
+    // Starts collapsed -- a glanceable date pill rather than a persistent
+    // card, matching the "Notes"/"Tasks" count badges that stay visible
+    // either way. The button's "+" icon already matches this collapsed
+    // default (see the HTML).
+    if (dayLabelEl) dayLabelEl.classList.add('panel-collapsed');
     const dayValueEl = document.getElementById('dayValue');
     const hudBadgeEl = document.getElementById('hudBadge');
     const hudTaskEl = document.getElementById('hudTask');
+    const hudTaskRowEl = document.getElementById('hudTaskRow');
     const hudNotesBtn = document.getElementById('hudNotesBtn');
     const hudNotesCount = document.getElementById('hudNotesCount');
     const weekNotesModalEl = document.getElementById('weekNotesModal');
@@ -2738,7 +2768,10 @@ function getCalendarWalkHtml(
       currentDate = date;
       const isToday = isSameDate(date, TODAY);
       const isPadding = date.getMonth() !== currentPage.month;
-      const eventText = SAMPLE_EVENTS[key] || 'No events scheduled for this day.';
+      // Only show the event line when this day actually has one -- "No
+      // events scheduled for this day" on every empty tile was pure noise
+      // to filter out each time the panel is glanced at.
+      const eventText = SAMPLE_EVENTS[key] || '';
       const label = \`\${WEEKDAYS[date.getDay()]}, \${MONTH_NAMES[date.getMonth()].slice(0, 3)} \${date.getDate()}, \${date.getFullYear()}\`;
       if (dayValueEl) dayValueEl.textContent = label;
       if (hudBadgeEl) {
@@ -2746,6 +2779,7 @@ function getCalendarWalkHtml(
         hudBadgeEl.className = 'hud-badge' + (isToday ? ' today' : '') + (isPadding ? ' pad' : '');
       }
       if (hudTaskEl) hudTaskEl.textContent = eventText;
+      if (hudTaskRowEl) hudTaskRowEl.style.display = eventText ? 'flex' : 'none';
       refreshHudForCurrentDay();
       if (notesOpen) openNotesPanel();
       if (tasksOpen) openTasksPanel();
