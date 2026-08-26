@@ -318,7 +318,12 @@ function getCalendarWalkHtml(
     #studyPlanOverlay.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
     .study-plan-header-text { display: flex; flex-direction: column; align-items: center; }
     .study-plan-sub { font-size: 11px; color: var(--cal-text-muted); font-weight: 600; }
-    #studyPlanCanvas { position: relative; flex: 1; margin: 24px; min-height: 0; }
+    /* The mind map used to be the whole screen (flex:1, filling it). Now
+       that a written strategies guide sits below it too, the OVERLAY
+       scrolls as one column instead -- the map gets a fixed working height
+       rather than claiming all remaining space. */
+    .study-plan-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    #studyPlanCanvas { position: relative; height: 340px; flex-shrink: 0; margin: 20px; }
     .study-plan-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
     .study-plan-center {
       position: absolute; transform: translate(-50%, -50%); width: 132px;
@@ -334,6 +339,26 @@ function getCalendarWalkHtml(
     .study-plan-node-day { font-size: 9.5px; color: var(--cal-text-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; }
     .study-plan-node-label { font-size: 11.5px; font-weight: 700; margin: 3px 0; }
     .study-plan-node-minutes { font-size: 11px; color: var(--cal-accent); font-weight: 800; }
+
+    /* Study strategies: short, scannable cards (not paragraphs -- chunked
+       info is easier to process) grounding the plan in real teaching-and-
+       learning practice: task initiation, timeboxing, stage-matched
+       technique, spaced practice, energy-based pacing, chunking/body-
+       doubling, and non-punitive framing. */
+    .study-plan-strategies { padding: 4px 20px 8px; display: flex; flex-direction: column; gap: 10px; }
+    .study-plan-strategies-heading { font-family: var(--font-display); font-weight: 800; font-size: 14px; margin: 4px 0 2px; }
+    .strategy-card {
+      display: flex; gap: 10px; align-items: flex-start;
+      background: var(--cal-surface); border: 1px solid var(--cal-surface-border); border-radius: 14px; padding: 10px 12px;
+    }
+    .strategy-card-icon { font-size: 19px; line-height: 1.2; flex-shrink: 0; }
+    .strategy-card-title { font-weight: 800; font-size: 12.5px; margin-bottom: 2px; }
+    .strategy-card-body { font-size: 12px; color: var(--cal-text-muted); line-height: 1.4; }
+    .study-plan-back-footer {
+      margin: 6px 20px 20px; padding: 12px; border-radius: 14px; border: none;
+      background: var(--cal-accent); color: #fff; font-weight: 800; font-size: 13px; cursor: pointer;
+    }
+    .study-plan-back-footer:hover { opacity: 0.9; }
 
     #dayTasksModal {
       position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px);
@@ -471,6 +496,52 @@ function getCalendarWalkHtml(
     @media (max-height: 640px) {
       #monthLauncherBtn { width: 44px; height: 44px; }
     }
+
+    /* My City launcher: mirrors the month launcher on the opposite side --
+       opens the catalogue of banked study buildings. */
+    #cityLauncherBtn {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 28;
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 1.5px solid var(--cal-surface-border); background: #3d7355; color: #ffffff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+      cursor: pointer; box-shadow: var(--cal-shadow);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none;
+    }
+    #cityLauncherBtn:hover { transform: translateY(-50%) scale(1.08); }
+    #cityLauncherBtn:active { transform: translateY(-50%) scale(0.94); }
+    #cityLauncherBtn .launcher-icon { font-size: 17px; line-height: 1; }
+    #cityLauncherBtn .launcher-abbr { font-size: 9px; font-weight: 800; letter-spacing: 0.02em; }
+    @media (max-height: 640px) { #cityLauncherBtn { width: 44px; height: 44px; } }
+
+    /* My City catalogue: every banked building, grouped into one "street"
+       per assignment and ordered chronologically by the day it was earned
+       -- the row reads left-to-right as a walkable timeline of that
+       assignment's progress, with the capstone (final review/submit day)
+       marked distinctly at the end. Only what's actually been banked shows
+       up here; nothing punitive for days not yet reached. */
+    #myCityOverlay {
+      position: absolute; inset: 0; z-index: 66; background: var(--cal-modal-surface);
+      opacity: 0; pointer-events: none; transform: translateY(12px);
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      display: flex; flex-direction: column; color: var(--cal-modal-text);
+    }
+    #myCityOverlay.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    #myCityContent { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
+    .city-empty { text-align: center; color: var(--cal-text-muted); font-size: 13px; padding: 40px 24px; line-height: 1.5; }
+    .city-street { display: flex; flex-direction: column; gap: 8px; }
+    .city-street-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .city-street-title { font-family: var(--font-display); font-weight: 800; font-size: 14px; }
+    .city-street-progress { font-size: 11px; color: var(--cal-accent); font-weight: 700; white-space: nowrap; }
+    .city-street-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; }
+    .city-building-card {
+      flex-shrink: 0; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: var(--cal-surface); border: 1.5px solid var(--cal-surface-border); border-radius: 14px;
+      padding: 10px 6px 8px;
+    }
+    .city-building-card.is-capstone { border-color: #d4af37; background: rgba(212, 175, 55, 0.08); }
+    .city-building-icon { font-size: 26px; line-height: 1; }
+    .city-building-date { font-size: 9.5px; color: var(--cal-text-muted); font-weight: 700; text-align: center; }
+    .city-building-star { font-size: 10px; }
   </style>
 </head>
 <body>
@@ -483,6 +554,24 @@ function getCalendarWalkHtml(
       <span class="launcher-icon">&#128197;</span>
       <span class="launcher-abbr" id="monthLauncherAbbr">--</span>
     </button>
+
+    <!-- My City launcher: opens the catalogue of banked study buildings -->
+    <button id="cityLauncherBtn" aria-label="My City" type="button">
+      <span class="launcher-icon">&#127961;</span>
+      <span class="launcher-abbr" id="cityLauncherCount">0</span>
+    </button>
+
+    <div id="myCityOverlay" aria-label="My City">
+      <div class="month-grid-header">
+        <button class="month-grid-back" id="myCityBackBtn" type="button" aria-label="Close">&lt;</button>
+        <div class="study-plan-header-text">
+          <span class="month-grid-title">My City</span>
+          <span class="study-plan-sub" id="myCitySubtitle">0 buildings banked</span>
+        </div>
+        <span style="width:34px;"></span>
+      </div>
+      <div id="myCityContent"></div>
+    </div>
 
     <div id="monthGridOverlay" aria-label="Month picker">
       <div class="month-grid-header">
@@ -603,19 +692,76 @@ function getCalendarWalkHtml(
       <span id="focusRewardText">Nice work!</span>
     </div>
 
-    <!-- Study plan: a separate window (opened per-task) mapping only WHEN
-         and roughly HOW MUCH time to spend across the days before the due
-         date -- never what to actually do, that stays in the step list. -->
+    <!-- Study plan: a separate window (opened per-task) mapping WHEN and
+         roughly HOW MUCH time to spend across the days before the due
+         date -- the mind map itself never says what to actually do, that
+         stays in the step list -- plus a general, non-task-specific study
+         strategies guide underneath it. -->
     <div id="studyPlanOverlay" aria-label="Study plan">
       <div class="month-grid-header">
-        <button class="month-grid-back" id="studyPlanBackBtn" type="button" aria-label="Close">&lt;</button>
+        <button class="month-grid-back" id="studyPlanBackBtn" type="button" aria-label="Back to calendar">&lt;</button>
         <div class="study-plan-header-text">
           <span class="month-grid-title" id="studyPlanTitle">Study Plan</span>
           <span class="study-plan-sub" id="studyPlanDue">--</span>
         </div>
         <span style="width:34px;"></span>
       </div>
-      <div id="studyPlanCanvas"></div>
+      <div class="study-plan-scroll">
+        <div id="studyPlanCanvas"></div>
+        <div class="study-plan-strategies">
+          <div class="study-plan-strategies-heading">How to use this plan</div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#128640;</span>
+            <div>
+              <div class="strategy-card-title">Start tiny, start now</div>
+              <div class="strategy-card-body">Commit to just 2 minutes on today's step. Starting is usually the hard part, not finishing -- momentum tends to carry you further once you're actually in it.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#9201;&#65039;</span>
+            <div>
+              <div class="strategy-card-title">Work in short bursts</div>
+              <div class="strategy-card-body">Use the Focus timer for one set stretch, then take a real break -- stand up, stretch, get a drink. Short timed sessions beat trying to power through for hours.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#127919;</span>
+            <div>
+              <div class="strategy-card-title">Match the effort to the step</div>
+              <div class="strategy-card-body">Early steps just need you to begin. Middle steps are the real work -- clear your space, one thing at a time. Final steps are for checking, not creating: read it aloud or explain it to someone.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#128197;</span>
+            <div>
+              <div class="strategy-card-title">Little and often beats cramming</div>
+              <div class="strategy-card-body">Spreading the same work across several days helps it stick better than one long session the night before -- that's why this plan is spread out, not backloaded.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#128267;</span>
+            <div>
+              <div class="strategy-card-title">Energy changes day to day -- that's normal</div>
+              <div class="strategy-card-body">Some days you'll have more focus than others. Use the "low energy" option on the Focus timer instead of skipping the day completely.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#129513;</span>
+            <div>
+              <div class="strategy-card-title">Stuck? Shrink the step</div>
+              <div class="strategy-card-body">If a step feels too big, break it into something you could do in 5 minutes. Studying next to someone else, even on a call, helps a lot too.</div>
+            </div>
+          </div>
+          <div class="strategy-card">
+            <span class="strategy-card-icon">&#128156;</span>
+            <div>
+              <div class="strategy-card-title">Missing a day doesn't break the plan</div>
+              <div class="strategy-card-body">If you miss a day, just pick up the next one -- no need to double up or catch up all at once.</div>
+            </div>
+          </div>
+        </div>
+        <button class="study-plan-back-footer" id="studyPlanBackFooterBtn" type="button">&lsaquo; Back to Calendar</button>
+      </div>
     </div>
 
     <div id="tutorialWrapper" class="tutorial-wrapper">
@@ -1639,11 +1785,19 @@ function getCalendarWalkHtml(
     // The two source GLBs are authored at very different native scales, so
     // a single flat multiplier made one tower over the character and the
     // other barely register. Normalize each template to the SAME target
-    // height instead. Target is calibrated to roughly 3x how big the V2
-    // model (the one that lands on day 27 dates, per the reference build)
-    // looked at its old flat scale=4 -- proportionate to a calendar tile,
-    // not a landmark.
-    const STUDY_BUILDING_TARGET_HEIGHT = 3.6;
+    // height instead -- verified via direct bounding-box measurement that
+    // both models land on the exact same true rendered height this way.
+    const STUDY_BUILDING_TARGET_HEIGHT = 5.5;
+    // A day's building height also encodes its estimated workload, so
+    // walking (or just glancing at) the calendar reads as a quick-scan
+    // overview of which days are light vs heavy before a single panel is
+    // opened. REFERENCE_MINUTES is the session length that renders at the
+    // normalized target height (1x); shorter/longer days scale down/up
+    // from there, clamped so a single heavy day never swallows the tile or
+    // a light one vanishes to nothing.
+    const STUDY_BUILDING_REFERENCE_MINUTES = 25;
+    const STUDY_BUILDING_MIN_SIZE_FACTOR = 0.6;
+    const STUDY_BUILDING_MAX_SIZE_FACTOR = 2.0;
     const studyBuildingTemplates = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(null);
     const studyBuildingScales = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(1);
     const BUILDING_RESERVE_KEY = 'calendar_walk_building_reserve_' + (STUDENT_ID || 'guest');
@@ -1684,16 +1838,13 @@ function getCalendarWalkHtml(
         (DAY_TASKS[dayKey] || []).forEach((task) => {
           if (!task.dueDateISO) return;
           const nodes = buildStudyPlanNodes(task);
-          nodes.forEach((n, i) => {
+          nodes.forEach((n) => {
             const key = isoKey(addDays(today, n.dateOffset));
             if (map[key]) return; // first task/day wins on a clash
-            const stepIndex = task.decodedSteps.length
-              ? Math.min(task.decodedSteps.length - 1, Math.floor((i * task.decodedSteps.length) / nodes.length))
-              : -1;
-            const step = stepIndex >= 0 ? task.decodedSteps[stepIndex] : null;
+            const step = task.decodedSteps[n.stepIndex] || null;
             const claimId = task.id + '_' + key;
             map[key] = {
-              task, key, isFinal: n.isFinal,
+              task, key, isFinal: n.isFinal, minutes: n.minutes,
               achieved: !!(step && step.done),
               claimed: claimedStudyDayKeys.has(claimId),
               claimId,
@@ -1704,17 +1855,19 @@ function getCalendarWalkHtml(
       return map;
     }
 
-    function claimStudyBuilding(claimId, task, dateKey, modelIndex) {
+    function claimStudyBuilding(claimId, task, dateKey, modelIndex, isFinal) {
       if (claimedStudyDayKeys.has(claimId)) return;
       claimedStudyDayKeys.add(claimId);
       const reserve = loadBuildingReserve();
       reserve.push({
-        claimId, taskId: task.id, taskLabel: task.rawText, dateKey,
-        modelUrl: STUDY_BUILDING_MODEL_URLS[modelIndex], state: 'claimed', claimedAt: Date.now(),
+        claimId, taskId: task.id, taskLabel: task.rawText, taskDueDateISO: task.dueDateISO, dateKey,
+        modelUrl: STUDY_BUILDING_MODEL_URLS[modelIndex], modelIndex, isFinal: !!isFinal,
+        state: 'claimed', claimedAt: Date.now(),
       });
       saveBuildingReserve(reserve);
-      showRewardToast('Building banked to your reserve!');
+      showRewardToast(isFinal ? 'Capstone banked -- nice work on this assignment!' : 'Building banked to your reserve!');
       refreshStudyMarkers();
+      updateCityLauncherCount();
     }
 
     function applyStudyMarkersToPage(page) {
@@ -1730,7 +1883,11 @@ function getCalendarWalkHtml(
         const template = studyBuildingTemplates[modelIndex] || studyBuildingTemplates.find((t) => t);
         if (!template) return;
         const model = template.clone(true);
-        model.scale.setScalar(studyBuildingScales[modelIndex] || STUDY_BUILDING_TARGET_HEIGHT);
+        const sizeFactor = THREE.MathUtils.clamp(
+          (info.minutes || STUDY_BUILDING_REFERENCE_MINUTES) / STUDY_BUILDING_REFERENCE_MINUTES,
+          STUDY_BUILDING_MIN_SIZE_FACTOR, STUDY_BUILDING_MAX_SIZE_FACTOR
+        );
+        model.scale.setScalar((studyBuildingScales[modelIndex] || STUDY_BUILDING_TARGET_HEIGHT) * sizeFactor);
         model.traverse((o) => {
           if (o.isMesh) {
             o.castShadow = true;
@@ -1743,7 +1900,7 @@ function getCalendarWalkHtml(
         });
         entry.studyMarkerGroup.add(model);
         if (info.achieved) {
-          entry.studyMarkerGroup.userData.claimInfo = { claimId: info.claimId, task: info.task, dateKey: key, modelIndex };
+          entry.studyMarkerGroup.userData.claimInfo = { claimId: info.claimId, task: info.task, dateKey: key, modelIndex, isFinal: info.isFinal };
         }
       });
     }
@@ -2071,11 +2228,11 @@ function getCalendarWalkHtml(
 
     const touchStart = { x: 0, y: 0 };
     window.addEventListener('touchstart', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       const t = e.touches[0]; touchStart.x = t.clientX; touchStart.y = t.clientY; hideTutorial();
     }, { passive: true });
     window.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       e.preventDefault();
       isAutoWalkingToToday = false;
       const t = e.touches[0];
@@ -2087,7 +2244,7 @@ function getCalendarWalkHtml(
       movement.left = jx < -0.3; movement.right = jx > 0.3; movement.forward = jy < -0.3; movement.backward = jy > 0.3;
     }, { passive: false });
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       movement.left = movement.right = movement.forward = movement.backward = false;
     }, { passive: true });
 
@@ -2112,7 +2269,7 @@ function getCalendarWalkHtml(
       return false;
     }
     window.addEventListener('dblclick', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       if (checkCharacterHit(e.clientX, e.clientY)) triggerWalkToToday();
     });
 
@@ -2137,15 +2294,15 @@ function getCalendarWalkHtml(
       while (hitGroup && !hitGroup.userData.claimInfo) hitGroup = hitGroup.parent;
       if (!hitGroup) return;
       const info = hitGroup.userData.claimInfo;
-      claimStudyBuilding(info.claimId, info.task, info.dateKey, info.modelIndex);
+      claimStudyBuilding(info.claimId, info.task, info.dateKey, info.modelIndex, info.isFinal);
     }
     window.addEventListener('click', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       checkStudyBuildingClaim(e.clientX, e.clientY);
     });
     let lastTouchTapTime = 0, lastTouchTapX = 0, lastTouchTapY = 0;
     window.addEventListener('touchend', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) return;
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
       const now = Date.now();
       const touch = e.changedTouches && e.changedTouches[0];
       if (touch) {
@@ -2156,7 +2313,7 @@ function getCalendarWalkHtml(
       }
     }, { passive: true });
     window.addEventListener('mousemove', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay')) { canvas.style.cursor = 'default'; return; }
+      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) { canvas.style.cursor = 'default'; return; }
       canvas.style.cursor = checkCharacterHit(e.clientX, e.clientY) ? 'pointer' : 'default';
     });
     function hideTutorial() { const el = document.getElementById('tutorialWrapper'); if (el) el.style.display = 'none'; }
@@ -2566,6 +2723,15 @@ function getCalendarWalkHtml(
     const studyPlanCanvasEl = document.getElementById('studyPlanCanvas');
     const studyPlanBackBtnEl = document.getElementById('studyPlanBackBtn');
 
+    // Each decoded step gets its OWN day -- "open a blank doc" on one day,
+    // "write a first draft" on another -- rather than an even minutes-per-
+    // day split with generic "study session" blocks. Steps spread across
+    // the days between today and the due date, with the last step (every
+    // category's decoder ends in a finish/submit-style step) always
+    // landing exactly on the due date. Per-step minutes are weighted, not
+    // split evenly: the first step is deliberately trivial (a task-
+    // initiation nudge) and gets a light slice, the last step is a lighter
+    // wrap-up too, and the steps in between carry the bulk of the work.
     function buildStudyPlanNodes(task) {
       const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
       const due = new Date(task.dueDateISO + 'T00:00:00');
@@ -2573,20 +2739,29 @@ function getCalendarWalkHtml(
       let totalDays = Math.round((due - today) / msPerDay) + 1;
       if (totalDays < 1) totalDays = 1;
 
+      const steps = (task.decodedSteps && task.decodedSteps.length) ? task.decodedSteps : [{ text: 'Work on it' }];
+      const stepCount = steps.length;
       const remainingEstimate = Math.max(10, task.estimatedMinutes - (task.loggedMinutes || 0));
-      const nodes = [];
-      if (totalDays === 1) {
-        nodes.push({ dateOffset: 0, label: 'Final review & submit', minutes: remainingEstimate, isFinal: true });
-        return nodes;
-      }
-      const finalMinutes = Math.max(10, Math.round(remainingEstimate * 0.12 / 5) * 5);
-      const workDays = totalDays - 1;
-      const perDay = Math.max(10, Math.round((remainingEstimate - finalMinutes) / workDays / 5) * 5);
-      for (let i = 0; i < workDays; i++) {
-        nodes.push({ dateOffset: i, label: 'Study session ' + (i + 1), minutes: perDay, isFinal: false });
-      }
-      nodes.push({ dateOffset: workDays, label: 'Final review & submit', minutes: finalMinutes, isFinal: true });
-      return nodes;
+
+      const weights = steps.map((_, i) => {
+        if (stepCount === 1) return 1;
+        if (i === 0) return 0.5;
+        if (i === stepCount - 1) return 0.8;
+        return 1.4;
+      });
+      const weightSum = weights.reduce((a, b) => a + b, 0);
+
+      return steps.map((step, i) => {
+        const dateOffset = stepCount === 1
+          ? totalDays - 1
+          : Math.min(totalDays - 1, Math.round((i * (totalDays - 1)) / (stepCount - 1)));
+        const minutes = Math.max(10, Math.round((remainingEstimate * weights[i] / weightSum) / 5) * 5);
+        const isFinal = i === stepCount - 1;
+        return {
+          dateOffset, stepIndex: i, minutes, isFinal,
+          label: isFinal ? 'Final review & submit' : 'Study session ' + (i + 1),
+        };
+      });
     }
 
     function renderStudyPlan(task) {
@@ -2626,9 +2801,100 @@ function getCalendarWalkHtml(
       renderStudyPlan(task);
       studyPlanOverlayEl.classList.add('active');
     };
-    if (studyPlanBackBtnEl) studyPlanBackBtnEl.addEventListener('click', () => {
+    function closeStudyPlan() {
       if (studyPlanOverlayEl) studyPlanOverlayEl.classList.remove('active');
+    }
+    if (studyPlanBackBtnEl) studyPlanBackBtnEl.addEventListener('click', closeStudyPlan);
+    const studyPlanBackFooterBtnEl = document.getElementById('studyPlanBackFooterBtn');
+    if (studyPlanBackFooterBtnEl) studyPlanBackFooterBtnEl.addEventListener('click', closeStudyPlan);
+
+    // ------------------------------------------------------------------
+    // My City: the catalogue of banked buildings, the first concrete step
+    // toward a full Little Big City build-out. Grouped into one "street"
+    // per assignment, ordered chronologically by the day each building was
+    // earned, so a street reads left-to-right as a walkable timeline of
+    // that assignment's progress -- the capstone (final review/submit day)
+    // is marked distinctly at the end. Only banked buildings appear here;
+    // nothing shows up as missing/red for days not yet reached, which
+    // keeps the collection purely additive/positive rather than a tracker
+    // of what's overdue (that framing already lives on the calendar
+    // itself, where a locked grey building is neutral, not a red flag).
+    const cityLauncherBtnEl = document.getElementById('cityLauncherBtn');
+    const cityLauncherCountEl = document.getElementById('cityLauncherCount');
+    const myCityOverlayEl = document.getElementById('myCityOverlay');
+    const myCitySubtitleEl = document.getElementById('myCitySubtitle');
+    const myCityContentEl = document.getElementById('myCityContent');
+    const myCityBackBtnEl = document.getElementById('myCityBackBtn');
+    const BUILDING_ICONS = ['\u{1F3E0}', '\u{1F3E2}']; // one per STUDY_BUILDING_MODEL_URLS entry
+
+    function parseIsoKeyToDate(key) {
+      const parts = key.split('-').map(Number);
+      return new Date(parts[0], parts[1], parts[2]);
+    }
+    function formatShortDateFromIsoKey(key) {
+      const d = parseIsoKeyToDate(key);
+      return MONTH_NAMES[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
+    }
+    function findTaskById(taskId) {
+      for (const dayKey of Object.keys(DAY_TASKS)) {
+        const found = (DAY_TASKS[dayKey] || []).find((t) => t.id === taskId);
+        if (found) return found;
+      }
+      return null;
+    }
+    function updateCityLauncherCount() {
+      if (cityLauncherCountEl) cityLauncherCountEl.textContent = String(loadBuildingReserve().length);
+    }
+
+    function renderMyCity() {
+      if (!myCityContentEl) return;
+      const reserve = loadBuildingReserve();
+      if (myCitySubtitleEl) myCitySubtitleEl.textContent = reserve.length + (reserve.length === 1 ? ' building banked' : ' buildings banked');
+      if (reserve.length === 0) {
+        myCityContentEl.innerHTML = '<div class="city-empty">No buildings banked yet. Check off a step on a scheduled study day to unlock its building on the calendar, then tap it to bank it here.</div>';
+        return;
+      }
+      const byTask = {};
+      reserve.forEach((b) => {
+        if (!byTask[b.taskId]) byTask[b.taskId] = { label: b.taskLabel, dueDateISO: b.taskDueDateISO, items: [] };
+        byTask[b.taskId].items.push(b);
+      });
+      const streetsHtml = Object.keys(byTask).map((taskId) => {
+        const group = byTask[taskId];
+        group.items.sort((a, c) => parseIsoKeyToDate(a.dateKey) - parseIsoKeyToDate(c.dateKey));
+        const liveTask = findTaskById(taskId);
+        const totalLabel = liveTask
+          ? group.items.length + ' of ' + buildStudyPlanNodes(liveTask).length + ' collected'
+          : group.items.length + ' collected';
+        const dueLabel = group.dueDateISO ? formatShortDate(group.dueDateISO) : '';
+        const cardsHtml = group.items.map((b) => {
+          const icon = BUILDING_ICONS[b.modelIndex] || BUILDING_ICONS[0];
+          return '<div class="city-building-card' + (b.isFinal ? ' is-capstone' : '') + '">' +
+            (b.isFinal ? '<span class="city-building-star">⭐</span>' : '') +
+            '<span class="city-building-icon">' + icon + '</span>' +
+            '<span class="city-building-date">' + formatShortDateFromIsoKey(b.dateKey) + '</span>' +
+          '</div>';
+        }).join('');
+        return '<div class="city-street">' +
+          '<div class="city-street-header">' +
+            '<span class="city-street-title">' + group.label.replace(/</g, '&lt;') + '</span>' +
+            '<span class="city-street-progress">' + totalLabel + (dueLabel ? ' &middot; due ' + dueLabel : '') + '</span>' +
+          '</div>' +
+          '<div class="city-street-row">' + cardsHtml + '</div>' +
+        '</div>';
+      }).join('');
+      myCityContentEl.innerHTML = streetsHtml;
+    }
+
+    if (cityLauncherBtnEl) cityLauncherBtnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderMyCity();
+      if (myCityOverlayEl) myCityOverlayEl.classList.add('active');
     });
+    if (myCityBackBtnEl) myCityBackBtnEl.addEventListener('click', () => {
+      if (myCityOverlayEl) myCityOverlayEl.classList.remove('active');
+    });
+    updateCityLauncherCount();
 
     // Crystal size/glow controls (persisted per-student)
     (function initCrystalControls() {
