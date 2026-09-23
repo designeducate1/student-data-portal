@@ -7,10 +7,10 @@ import CalendarWalk from './components/CalendarWalk';
 import { Calendar2D } from './components/Calendar2D';
 import { loadCalendarNotes, saveCalendarNotes, loadCalendarTasks, saveCalendarTasks } from './lib/localStudent';
 
-const EEYORE_BG = 'https://i.postimg.cc/Dwj6cP3m/Eeyore_Cover_Concept.png';
-const WOODED_BG = 'https://i.postimg.cc/Z5p6DrL6/Copy-of-Eeyore-Cover-Concept.png';
-const EYE_BG = 'https://i.postimg.cc/P50825cB/Lord-of-the-rings-shhire.png';
-const MINECRAFT_BG = 'https://i.postimg.cc/QNY1CNnH/mixboard-image-(13).png';
+const EEYORE_BG = '/backgrounds/eeyore-cover-concept.png';
+const WOODED_BG = '/backgrounds/wooded-cover-concept.png';
+const EYE_BG = '/backgrounds/lotr-shire.png';
+const MINECRAFT_BG = '/backgrounds/minecraft-scene.png';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycby4OkFc3mZw4fVzQVrsLEtsjSkIZjwEGLmZr7n-QIJpPDH_6Lmp-sfCi4b7uUpS2M8B/exec';
 const API_KEY = '1WobiYnZuLTdNrErTvStrw-iVDYy_sIgnw92dhI4TOZuOIXZ-tKxCwRGh';

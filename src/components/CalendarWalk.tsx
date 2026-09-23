@@ -841,10 +841,10 @@ function getCalendarWalkHtml(
     // calendar belongs to whichever world the student picked, not just its
     // rewards.
     // ------------------------------------------------------------------
-    const MINECRAFT_BG_URL = 'https://i.postimg.cc/QNY1CNnH/mixboard-image-(13).png';
-    const LOTR_BG_URL = 'https://i.postimg.cc/P50825cB/Lord-of-the-rings-shhire.png';
-    const EEYORE_BG_URL = 'https://i.postimg.cc/Dwj6cP3m/Eeyore_Cover_Concept.png';
-    const WOODED_BG_URL = 'https://i.postimg.cc/Z5p6DrL6/Copy-of-Eeyore-Cover-Concept.png';
+    const MINECRAFT_BG_URL = '/backgrounds/minecraft-scene.png';
+    const LOTR_BG_URL = '/backgrounds/lotr-shire.png';
+    const EEYORE_BG_URL = '/backgrounds/eeyore-cover-concept.png';
+    const WOODED_BG_URL = '/backgrounds/wooded-cover-concept.png';
 
     const CALENDAR_THEMES = {
       minecraft: {

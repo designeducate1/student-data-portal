@@ -1,6 +1,5 @@
-@import "tailwindcss";
-
 @import url('https://cdn.jsdelivr.net/npm/@fontsource/opendyslexic/index.css');
+@import "tailwindcss";
 
 .dyslexic-mode,
 .dyslexic-mode * {

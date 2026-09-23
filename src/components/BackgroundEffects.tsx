@@ -274,9 +274,9 @@ export default function BackgroundEffects({ currentBgUrl, pointerPos, isAuthenti
 
     cleanCurrentEffect();
 
-    const EEYORE_BG = 'https://i.postimg.cc/Dwj6cP3m/Eeyore_Cover_Concept.png';
-    const EYE_BG = 'https://i.postimg.cc/P50825cB/Lord-of-the-rings-shhire.png';
-    const MINECRAFT_BG = 'https://i.postimg.cc/QNY1CNnH/mixboard-image-(13).png';
+    const EEYORE_BG = '/backgrounds/eeyore-cover-concept.png';
+    const EYE_BG = '/backgrounds/lotr-shire.png';
+    const MINECRAFT_BG = '/backgrounds/minecraft-scene.png';
 
     // RENDER DETECTED BG
     if (currentBgUrl === EEYORE_BG) {
