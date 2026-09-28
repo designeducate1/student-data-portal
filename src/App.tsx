@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChatMessage, StudentData } from './types';
+import { ChatMessage, ChatCard, StudentData } from './types';
 import BackgroundEffects from './components/BackgroundEffects';
 import Character3D from './components/Character3D';
 import EnquiryModal from './components/EnquiryModal';
+import PreviewModal from './components/PreviewModal';
 import CalendarWalk from './components/CalendarWalk';
 import { Calendar2D } from './components/Calendar2D';
 import { loadCalendarNotes, saveCalendarNotes, loadCalendarTasks, saveCalendarTasks } from './lib/localStudent';
+import { ClassroomReconnectBanner } from './components/ClassroomReconnectBanner';
 
 const EEYORE_BG = '/backgrounds/eeyore-cover-concept.png';
 const WOODED_BG = '/backgrounds/wooded-cover-concept.png';
@@ -139,6 +141,13 @@ export default function StudentPortalApp() {
 
   // --- ENQUIRY INPUT & MODAL STATE ---
   const [enquiryText, setEnquiryText] = useState('');
+  // When true, the enquiry input box below temporarily doubles as a
+  // Classroom/sheet search box (see the "Search" pill in handleQuery) --
+  // reuses the one existing text field rather than adding a second one.
+  const [isSearchMode, setIsSearchMode] = useState(false);
+  // The attachment card currently open in the full-size PreviewModal, or
+  // null when none is open.
+  const [previewCard, setPreviewCard] = useState<ChatCard | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInitialMessage, setModalInitialMessage] = useState('');
 
@@ -355,11 +364,146 @@ export default function StudentPortalApp() {
     setChatHistory((prev) => [...prev, { text: query, type: 'sent' }]);
     setIsBotLoading(true);
 
-    setTimeout(() => {
-      setIsBotLoading(false);
+    // TEST/DRAFT: "Deadlines" answers from the real connected Google
+    // Classroom instead of the sheet column of the same name below, so
+    // the two sources can be compared. Only this one query is
+    // intercepted, case-insensitively -- every other pill (Attendance,
+    // Student notes, etc.) still reads the sheet exactly as before.
+    if (query.trim().toLowerCase() === 'deadlines') {
+      fetch('/.netlify/functions/classroom-coursework?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const first = data.tasks && data.tasks[0];
+          const text = first
+            ? `**Deadlines (Google Classroom):**\n${first.rawText} -- due ${first.dueDateISO}`
+            : '**Deadlines (Google Classroom):**\nNo published assignment with a due date found yet.';
+          setChatHistory((prev) => [...prev, { text, type: 'received' }]);
+        })
+        .catch(() => {
+          setChatHistory((prev) => [...prev, { text: 'Could not reach Google Classroom.', type: 'received' }]);
+        })
+        .finally(() => setIsBotLoading(false));
+      return;
+    }
 
+    // TEST/DRAFT: "Project Assignments" -- same pattern as Deadlines above,
+    // but replies with the assignment's real description verbatim (no AI
+    // involved at all, this is just displaying text Classroom already
+    // stores) instead of just its title/due date.
+    if (query.trim().toLowerCase() === 'project assignments') {
+      fetch('/.netlify/functions/classroom-coursework?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const first = data.tasks && data.tasks[0];
+          const topicLine = first && first.topicName ? `\n(Topic: ${first.topicName})` : '';
+          const text = first
+            ? `**${first.rawText} (Google Classroom):**\n${first.description || '(No description set on this assignment.)'}${topicLine}`
+            : '**Project Assignments (Google Classroom):**\nNo published assignment found yet.';
+          setChatHistory((prev) => [...prev, { text, type: 'received' }]);
+        })
+        .catch(() => {
+          setChatHistory((prev) => [...prev, { text: 'Could not reach Google Classroom.', type: 'received' }]);
+        })
+        .finally(() => setIsBotLoading(false));
+      return;
+    }
+
+    // TEST/DRAFT: "Resources" -- standalone materials/handouts a teacher
+    // has posted (not attached to any graded assignment), which never show
+    // up under Deadlines or Project Assignments since Classroom treats
+    // them as a separate resource type.
+    if (query.trim().toLowerCase() === 'resources') {
+      fetch('/.netlify/functions/classroom-materials?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const items = data.resources || [];
+          const text = items.length
+            ? `**Resources (Google Classroom):**\n${items
+                .map((r) => `${r.title}${r.links.length ? ` -- ${r.links.map((l) => l.title).join(', ')}` : ''}`)
+                .join('\n')}`
+            : '**Resources (Google Classroom):**\nNo posted materials found yet.';
+          const cards = items.flatMap((r) => r.links || []);
+          setChatHistory((prev) => [...prev, { text, type: 'received', cards: cards.length ? cards : undefined }]);
+        })
+        .catch(() => {
+          setChatHistory((prev) => [...prev, { text: 'Could not reach Google Classroom.', type: 'received' }]);
+        })
+        .finally(() => setIsBotLoading(false));
+      return;
+    }
+
+    // TEST/DRAFT: "Announcements" -- the class stream's posts, re-shown as
+    // a short plain list instead of Classroom's own dense chronological
+    // feed. Only the post text itself -- Classroom's API doesn't expose
+    // the comments underneath a post either way.
+    if (query.trim().toLowerCase() === 'announcements') {
+      fetch('/.netlify/functions/classroom-announcements?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const items = data.announcements || [];
+          const text = items.length
+            ? `**Announcements (Google Classroom):**\n${items.slice(0, 5).map((a) => a.text).join('\n\n')}`
+            : '**Announcements (Google Classroom):**\nNo announcements posted yet.';
+          setChatHistory((prev) => [...prev, { text, type: 'received' }]);
+        })
+        .catch(() => {
+          setChatHistory((prev) => [...prev, { text: 'Could not reach Google Classroom.', type: 'received' }]);
+        })
+        .finally(() => setIsBotLoading(false));
+      return;
+    }
+
+    // TEST/DRAFT: "Search" -- doesn't fetch anything itself. Switches the
+    // enquiry input below into search mode (see its placeholder/submit
+    // logic further down) so the next thing typed there is searched
+    // against the Classroom Stream instead of sent as an enquiry.
+    if (query.trim().toLowerCase() === 'search') {
+      setIsSearchMode(true);
+      setChatHistory((prev) => [
+        ...prev,
+        { text: 'What would you like to search for? Type it in the box below.', type: 'received' },
+      ]);
+      setIsBotLoading(false);
+      return;
+    }
+
+    // TEST/DRAFT: "Stream" -- announcements, assignments and materials
+    // merged into one chronological feed, the same activity Classroom's
+    // own Stream page shows, just decluttered into a short plain list.
+    if (query.trim().toLowerCase() === 'stream') {
+      fetch('/.netlify/functions/classroom-stream?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const items = data.stream || [];
+          const shown = items.slice(0, 6);
+          const label = { announcement: 'Announcement', assignment: 'Assignment', material: 'Resource' };
+          const lines = shown.map((item) => {
+            const tag = `[${label[item.type] || item.type}]`;
+            if (item.type === 'assignment') {
+              return `${tag} ${item.title}${item.dueDateISO ? ` -- due ${item.dueDateISO}` : ''}`;
+            }
+            if (item.type === 'material') {
+              return `${tag} ${item.title}`;
+            }
+            return `${tag} ${item.text}`;
+          });
+          const text = lines.length
+            ? `**Stream (Google Classroom):**\n${lines.join('\n\n')}`
+            : '**Stream (Google Classroom):**\nNothing posted yet.';
+          const cards = shown.flatMap((item) => item.links || []);
+          setChatHistory((prev) => [...prev, { text, type: 'received', cards: cards.length ? cards : undefined }]);
+        })
+        .catch(() => {
+          setChatHistory((prev) => [...prev, { text: 'Could not reach Google Classroom.', type: 'received' }]);
+        })
+        .finally(() => setIsBotLoading(false));
+      return;
+    }
+
+    setTimeout(() => {
       if (!studentData) {
         setChatHistory((prev) => [...prev, { text: 'System not connected yet.', type: 'received' }]);
+        setIsBotLoading(false);
         return;
       }
 
@@ -371,7 +515,11 @@ export default function StudentPortalApp() {
       if (foundKey) {
         const val = studentData[foundKey] || 'N/A';
         setChatHistory((prev) => [...prev, { text: `**${foundKey}:**\n${val}`, type: 'received' }]);
-      } else {
+        setIsBotLoading(false);
+        return;
+      }
+
+      const notFoundReply = () => {
         const validKeysForSuggestions = keys.filter(
           (k) => k && k.trim() !== '' && k.toLowerCase() !== 'name' && !k.includes('*')
         );
@@ -383,8 +531,110 @@ export default function StudentPortalApp() {
             type: 'received',
           },
         ]);
-      }
+      };
+
+      // Nothing in the sheet data matched -- before giving up, search the
+      // live Classroom Stream (assignments/announcements/resources) for
+      // anything mentioning the query, same free-text box, no separate
+      // search UI needed.
+      //
+      // This is deliberately NOT an AI call -- no API, no cost. It's a
+      // small, free keyword-overlap scorer (strip filler words, count how
+      // many meaningful words each Stream item contains, title matches
+      // weighted above body matches) plus a handful of hard-coded intent
+      // rules for the phrasings students actually type ("when is X due",
+      // "is there a video for Y"). That's enough to answer something like
+      // "when is the deadline for the manifesto project" correctly, even
+      // though that exact phrase never appears anywhere verbatim -- a
+      // plain substring match (what this used to be) never could.
+      fetch('/.netlify/functions/classroom-stream?courseId=12148525194')
+        .then((res) => res.json())
+        .then((data) => {
+          const items = data.stream || [];
+
+          const STOPWORDS = new Set([
+            'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'to', 'for', 'of', 'on', 'in', 'at',
+            'and', 'or', 'what', 'when', 'where', 'which', 'who', 'whom', 'does', 'do', 'did', 'can', 'could',
+            'should', 'would', 'will', 'it', 'its', 'this', 'that', 'with', 'about', 'me', 'my', 'please',
+            'tell', 'show', 'find', 'there', 'has', 'have',
+          ]);
+          const tokenize = (text) => (text || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+          const keywords = tokenize(query).filter((w) => w.length > 2 && !STOPWORDS.has(w));
+
+          if (keywords.length === 0) {
+            notFoundReply();
+            return;
+          }
+
+          const scored = items
+            .map((item) => {
+              const titleLower = (item.title || '').toLowerCase();
+              const bodyLower = `${item.text || ''} ${item.topicName || ''}`.toLowerCase();
+              let score = 0;
+              keywords.forEach((kw) => {
+                if (titleLower.includes(kw)) score += 2;
+                if (bodyLower.includes(kw)) score += 1;
+              });
+              return { item, score };
+            })
+            .filter((s) => s.score > 0)
+            .sort((a, b) => b.score - a.score);
+
+          if (scored.length === 0) {
+            notFoundReply();
+            return;
+          }
+
+          const wantsDeadline = /\b(deadline|due)\b/.test(lowerQuery);
+          const wantsResource = /\b(video|resource|resources|material|materials|link|watch)\b/.test(lowerQuery);
+          const wantsAnnouncement = /\b(announcement|announcements|news|posted)\b/.test(lowerQuery);
+
+          let ranked = scored;
+          if (wantsResource) {
+            const materials = scored.filter((s) => s.item.type === 'material');
+            if (materials.length) ranked = materials;
+          } else if (wantsAnnouncement) {
+            const anns = scored.filter((s) => s.item.type === 'announcement');
+            if (anns.length) ranked = anns;
+          }
+
+          const top = ranked[0].item;
+          const label = { announcement: 'Announcement', assignment: 'Assignment', material: 'Resource' };
+
+          let text;
+          if (wantsDeadline && top.type === 'assignment' && top.dueDateISO) {
+            text = `**${top.title} (Google Classroom):**\n${top.title} is due on ${top.dueDateISO}.`;
+          } else {
+            const lines = ranked.slice(0, 5).map((s) => {
+              const item = s.item;
+              const tag = `[${label[item.type] || item.type}]`;
+              if (item.type === 'assignment') {
+                return `${tag} ${item.title}${item.dueDateISO ? ` -- due ${item.dueDateISO}` : ''}`;
+              }
+              if (item.type === 'material') return `${tag} ${item.title}`;
+              return `${tag} ${item.text}`;
+            });
+            text = `**Search results for "${query}" (Google Classroom):**\n${lines.join('\n\n')}`;
+          }
+
+          const cards = ranked.slice(0, 5).flatMap((s) => s.item.links || []);
+          setChatHistory((prev) => [...prev, { text, type: 'received', cards: cards.length ? cards : undefined }]);
+        })
+        .catch(notFoundReply)
+        .finally(() => setIsBotLoading(false));
     }, 600 + Math.random() * 400);
+  };
+
+  const handleInputSubmit = () => {
+    if (isSearchMode) {
+      const text = enquiryText.trim();
+      if (!text) return;
+      setEnquiryText('');
+      setIsSearchMode(false);
+      handleQuery(text);
+      return;
+    }
+    handleEnquirySubmit();
   };
 
   const handleEnquirySubmit = () => {
@@ -440,18 +690,6 @@ export default function StudentPortalApp() {
     }
   };
 
-  const exportCSV = () => {
-    if (!studentData) return;
-    const headers = Object.keys(studentData);
-    const csvRow = headers.map((h) => `"${studentData[h] || ''}"`).join(',');
-    const csv = [headers.join(','), csvRow].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `student_${loginId}_export.csv`;
-    a.click();
-  };
-
   const handleLogout = () => {
     setIsAuthenticated(false);
     setStudentData(null);
@@ -464,10 +702,34 @@ export default function StudentPortalApp() {
     setIsCalendar2DOpen(false);
   };
 
+  // The header's "Back" button reads as "go back one level" everywhere else
+  // in the app, but inside the 3D/2D calendar it was wired to full logout --
+  // stepping back all the way to the login screen instead of just closing
+  // the calendar view. Only fall through to a real logout when there is no
+  // view left to close.
+  const handleBackButton = () => {
+    if (isCalendarWalkOpen || isCalendar2DOpen) {
+      setIsCalendarWalkOpen(false);
+      setIsCalendar2DOpen(false);
+      return;
+    }
+    handleLogout();
+  };
+
   const validOptionKeys = studentData
-    ? Object.keys(studentData).filter(
-        (k) => k && k.trim() !== '' && k.toLowerCase() !== 'name' && !k.includes('*') && k.toLowerCase() !== 'password'
-      )
+    ? [
+        ...Object.keys(studentData).filter(
+          (k) => k && k.trim() !== '' && k.toLowerCase() !== 'name' && !k.includes('*') && k.toLowerCase() !== 'password' && k.toLowerCase() !== 'column m'
+        ),
+        // TEST/DRAFT: not real sheet columns -- added purely so the
+        // Google Classroom-sourced views (see handleQuery) have pills to
+        // trigger them from, same styling as every other one.
+        'Project Assignments',
+        'Resources',
+        'Announcements',
+        'Stream',
+        'Search',
+      ]
     : [];
 
   return (
@@ -478,6 +740,7 @@ export default function StudentPortalApp() {
       onTouchEnd={handlePointerLeave}
       className="bg-gray-100 dark:bg-zinc-950 min-h-screen flex items-center justify-center font-sans text-black dark:text-white transition-all duration-300 overflow-hidden"
     >
+      <ClassroomReconnectBanner />
       <div
         id="appFrame"
         className={
@@ -642,7 +905,7 @@ export default function StudentPortalApp() {
             <div className="absolute top-14 left-0 w-full flex justify-between items-end px-4 shrink-0 z-30 pointer-events-auto">
               <div className="bg-black/20 dark:bg-black/35 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-md border border-white/20">
                 <button
-                  onClick={handleLogout}
+                  onClick={handleBackButton}
                   className="text-white font-bold text-[11px] flex items-center gap-0.5 active:opacity-50 transition-opacity -ml-1 mb-0.5 cursor-pointer"
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -691,12 +954,6 @@ export default function StudentPortalApp() {
                   Aa
                 </button>
                 <button
-                  onClick={exportCSV}
-                  className="text-white/90 hover:text-white font-bold text-[11px] px-1.5 py-0.5 active:opacity-50 cursor-pointer"
-                >
-                  Export
-                </button>
-                <button
                   onClick={handleLogout}
                   className="text-[#FF3B30] hover:text-[#ff453a] font-bold text-[11px] px-1.5 py-0.5 active:opacity-50 cursor-pointer"
                 >
@@ -711,6 +968,50 @@ export default function StudentPortalApp() {
                 ref={sheetRef}
                 className="absolute top-[136px] bottom-[108px] right-2.5 w-[52%] max-w-[245px] flex flex-col bg-transparent z-20 pointer-events-none"
               >
+                {/* Quick-action pill catalog: anchored right under the header
+                    (top of chatSheet) rather than pushed down near the input,
+                    so it scrolls downward from a fixed point instead of
+                    drifting toward the avatar as the list grows. max-h-[40vh]
+                    caps it well above where the avatar stands (roughly the
+                    lower ~35% of the frame across all three themes) so even a
+                    long options list can't scroll down far enough to cover
+                    the character. min-h-0 on the scrollable child is required
+                    for a flex item to actually shrink/scroll instead of just
+                    growing to fit its content. */}
+                <div id="actionOverlay" className="w-full px-2 pb-2 z-40 pointer-events-none flex flex-col gap-2 items-end shrink-0 max-h-[40vh]">
+                  {showOptions ? (
+                    <div
+                      data-scrollable="true"
+                      className="flex-1 min-h-0 flex flex-col gap-2 items-end w-full overflow-y-auto no-scrollbar pointer-events-auto"
+                    >
+                      {validOptionKeys.map((key, i) => (
+                        <button
+                          key={key}
+                          onClick={() => handleQuery(key)}
+                          className="bg-[#007AFF] text-white px-4 py-2 rounded-[20px] rounded-br-[4px] text-[14px] shadow-md active:scale-95 transition-transform text-left max-w-[100%] leading-snug cursor-pointer"
+                          style={{ animation: `slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.08}s both` }}
+                        >
+                          {key}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowOptions(true);
+                        setShowSpeechBubble(true);
+                      }}
+                      className="bg-white/40 dark:bg-black/40 text-[#007AFF] dark:text-[#0a84ff] border border-white/20 dark:border-white/10 backdrop-blur-md px-4 py-2 rounded-[20px] rounded-br-[4px] text-[13px] font-semibold shadow-sm active:scale-95 transition-transform flex items-center gap-2 pointer-events-auto cursor-pointer"
+                      style={{ animation: 'slide-in-up 0.3s ease-out both' }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                      Back to Listing
+                    </button>
+                  )}
+                </div>
+
                 <div
                   id="chatContainer"
                   data-scrollable="true"
@@ -735,6 +1036,51 @@ export default function StudentPortalApp() {
                             __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
                           }}
                         />
+                        {msg.cards && msg.cards.length > 0 && (
+                          <div className="mt-2 flex flex-col gap-2">
+                            {msg.cards.map((card, cardIdx) => {
+                              const canPreview = card.kind === 'youtube' || card.kind === 'drive';
+                              return (
+                                <div
+                                  key={cardIdx}
+                                  onClick={() => canPreview && setPreviewCard(card)}
+                                  className={`rounded-2xl overflow-hidden border border-white/30 dark:border-white/10 bg-white/30 dark:bg-black/30 ${canPreview ? 'cursor-pointer' : ''}`}
+                                >
+                                  {canPreview && (
+                                    <div className="relative w-full aspect-video bg-black/80 flex items-center justify-center">
+                                      {card.thumbnailUrl && (
+                                        <img src={card.thumbnailUrl} alt={card.title} className="absolute inset-0 w-full h-full object-cover opacity-90" />
+                                      )}
+                                      <div className="relative w-9 h-9 rounded-full bg-black/55 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M8 5v14l11-7z" />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-between gap-2 px-3 py-2">
+                                    <span className="text-[12.5px] font-semibold truncate">{card.title}</span>
+                                    {canPreview ? (
+                                      <span className="text-[11px] font-bold text-[#007AFF] shrink-0 whitespace-nowrap">
+                                        Preview
+                                      </span>
+                                    ) : (
+                                      <a
+                                        href={card.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="text-[11px] font-bold text-[#007AFF] shrink-0 whitespace-nowrap"
+                                      >
+                                        Open ↗
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -751,40 +1097,6 @@ export default function StudentPortalApp() {
                     </div>
                   )}
                 </div>
-
-                <div id="actionOverlay" className="w-full px-2 pb-2 z-40 pointer-events-none flex flex-col gap-2 items-end shrink-0">
-                  {showOptions ? (
-                    <div
-                      data-scrollable="true"
-                      className="flex flex-col gap-2 items-end w-full max-h-[175px] overflow-y-auto no-scrollbar pointer-events-auto bg-white/40 dark:bg-black/40 backdrop-blur-md border border-white/20 dark:border-white/10 rounded-[24px] p-2.5 shadow-sm"
-                    >
-                      {validOptionKeys.map((key, i) => (
-                        <button
-                          key={key}
-                          onClick={() => handleQuery(key)}
-                          className="bg-[#007AFF] text-white px-4 py-2 rounded-[20px] rounded-br-[4px] text-[14px] shadow-sm active:scale-95 transition-transform text-left max-w-[100%] leading-snug cursor-pointer"
-                          style={{ animation: `slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) ${i * 0.08}s both` }}
-                        >
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setShowOptions(true);
-                        setShowSpeechBubble(true);
-                      }}
-                      className="bg-white/40 dark:bg-black/40 text-[#007AFF] dark:text-[#0a84ff] border border-white/20 dark:border-white/10 backdrop-blur-md px-4 py-2 rounded-[20px] rounded-br-[4px] text-[13px] font-semibold shadow-sm active:scale-95 transition-transform flex items-center gap-2 pointer-events-auto cursor-pointer"
-                      style={{ animation: 'slide-in-up 0.3s ease-out both' }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      Back to Listing
-                    </button>
-                  )}
-                </div>
               </div>
             )}
 
@@ -797,18 +1109,18 @@ export default function StudentPortalApp() {
                   <input
                     id="enquiryInput"
                     type="text"
-                    placeholder="Send us a further enquiry..."
+                    placeholder={isSearchMode ? 'Search deadlines, resources...' : 'Send us a further enquiry...'}
                     value={enquiryText}
                     onChange={(e) => setEnquiryText(e.target.value)}
                     className="flex-1 bg-white/20 dark:bg-black/20 backdrop-blur-md dark:text-white text-[17px] text-black rounded-full py-2.5 pl-4 pr-12 border border-white/30 dark:border-white/10 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#007AFF]/50 transition-all placeholder-gray-600 dark:placeholder-gray-400"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
-                        handleEnquirySubmit();
+                        handleInputSubmit();
                       }
                     }}
                   />
                   <button
-                    onClick={handleEnquirySubmit}
+                    onClick={handleInputSubmit}
                     className="absolute right-2 w-8 h-8 bg-[#007AFF] text-white rounded-full flex items-center justify-center shadow-md active:scale-95 transition-transform cursor-pointer"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -848,6 +1160,8 @@ export default function StudentPortalApp() {
               initialName={studentData?.['Name'] || loginId}
               initialMessage={modalInitialMessage}
             />
+
+            <PreviewModal card={previewCard} onClose={() => setPreviewCard(null)} />
           </div>
         )}
 

@@ -18,10 +18,10 @@ import React from 'react';
 // calendar/flip-clock), bounded on all sides; reaching the far edge plays a
 // two-page flip transition -- the current month rotates up and away around
 // a shared binder-ring hinge while the next month rotates into place -- and
-// the character continues walking onto day 1 of the new month. Notes and
-// their reward crystals are now tied directly to the real calendar date the
-// student is standing on when they add them (no separate day-picker, no
-// "week gap" tile) -- walking IS how you pick the date.
+// the character continues walking onto day 1 of the new month. Notes are
+// now tied directly to the real calendar date the student is standing on
+// when they add them (no separate day-picker, no "week gap" tile) --
+// walking IS how you pick the date.
 // ---------------------------------------------------------------------------
 
 function getCalendarWalkHtml(
@@ -110,47 +110,6 @@ function getCalendarWalkHtml(
       border: 1px solid var(--cal-surface-border); padding: 10px 16px; font-size: 14px; color: var(--cal-text);
     }
 
-    #dayLabel {
-      /* Was top: 18px -- that sat directly behind the host app's own
-         header/toolbar (back button, student name, Close 3D/2D/Aa/Export),
-         which renders above this iframe and made the top of the card dead
-         space. Starts clear of that chrome now, and is drag-repositionable
-         (see .hud-drag-handle) if a given screen still needs it moved. */
-      position: absolute; top: 128px; left: 50%; transform: translateX(-50%); z-index: 25;
-      width: min(92vw, 560px); background: var(--cal-surface);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      border: 1.5px solid var(--cal-surface-border); border-radius: 20px; padding: 6px 22px 14px;
-      box-shadow: var(--cal-shadow); pointer-events: auto; cursor: default;
-      transition: background 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; gap: 8px;
-    }
-    .hud-drag-handle { display: flex; justify-content: center; padding: 6px 0 2px 0; cursor: grab; touch-action: none; }
-    .hud-drag-handle:active { cursor: grabbing; }
-    .hud-drag-bar { width: 36px; height: 4px; border-radius: 4px; background: var(--cal-surface-border); }
-    .hud-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .hud-date-row { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display); }
-    .hud-date-row span:first-child { font-size: 12px; color: var(--cal-text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-    #dayValue { font-size: 18px; font-weight: 700; color: var(--cal-text); }
-    .hud-badge {
-      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 9999px;
-      background: rgba(60, 90, 107, 0.12); color: var(--cal-accent); white-space: nowrap;
-    }
-    .hud-badge.today { background: var(--cal-accent); color: #fff; }
-    .hud-badge.pad { background: rgba(0,0,0,0.08); color: var(--cal-text-muted); }
-    .hud-task-row { font-size: 13px; color: var(--cal-text-muted); display: flex; gap: 8px; align-items: flex-start; }
-    .hud-btn-row { display: flex; gap: 8px; align-self: flex-start; }
-    .hud-notes-btn {
-      display: flex; align-items: center; gap: 6px; align-self: flex-start;
-      background: var(--cal-accent); color: #fff; border: none; border-radius: 9999px;
-      padding: 6px 14px; font-size: 12px; font-weight: 700; font-family: var(--font-body);
-      cursor: pointer; transition: transform 0.15s ease, opacity 0.15s ease;
-    }
-    .hud-tasks-btn { background: #d68a1e; }
-    .hud-notes-btn:hover { opacity: 0.9; }
-    .hud-notes-btn:active { transform: scale(0.96); }
-    .hud-notes-btn .count {
-      background: rgba(255,255,255,0.28); border-radius: 9999px; padding: 0 7px; font-size: 11px;
-    }
-
     #weekNotesModal {
       position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(12px);
       width: min(92vw, 420px); background: var(--cal-modal-surface); border: 1px solid var(--cal-modal-border);
@@ -195,35 +154,26 @@ function getCalendarWalkHtml(
     }
     .notes-add-btn:hover { opacity: 0.9; }
     .notes-add-btn:active { transform: scale(0.96); }
-    .crystal-controls { display: flex; align-items: center; gap: 12px; padding-top: 8px; margin-top: 2px; border-top: 1px solid var(--cal-modal-border); }
-    .crystal-controls-label { font-size: 11px; font-weight: 700; color: var(--cal-text-muted); white-space: nowrap; flex: none; }
-    .crystal-slider-group { display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
-    .crystal-slider-group span { font-size: 12px; flex: none; }
-    .crystal-slider-group input[type="range"] { flex: 1; min-width: 0; accent-color: var(--cal-accent); height: 4px; cursor: pointer; }
     .notes-close-btn {
       background: transparent; border: none; color: var(--cal-text-muted); font-size: 13px; font-weight: 700;
       cursor: pointer; padding: 2px 6px;
     }
-    .notes-collapse-btn, .hud-collapse-btn {
+    .notes-collapse-btn {
       background: rgba(127,127,127,0.12); border: none; color: var(--cal-modal-text); font-size: 14px; font-weight: 800;
       cursor: pointer; width: 22px; height: 22px; border-radius: 50%; line-height: 1;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .notes-collapse-btn:hover, .hud-collapse-btn:hover { background: rgba(127,127,127,0.22); }
+    .notes-collapse-btn:hover { background: rgba(127,127,127,0.22); }
 
-    /* Notes/Tasks/Standing-on panels are moveable (drag the header) and
-       collapsible (header stays, body hides) rather than fixed in place --
-       useful for keeping them out of the way of the walkable 3D view
-       underneath. The Standing-on panel starts collapsed by default (see
-       its init call) so it reads as a glanceable pill rather than a
-       persistent card competing with the 3D scene for attention. */
+    /* Notes/Tasks panels are moveable (drag the header) and collapsible
+       (header stays, body hides) rather than fixed in place -- useful for
+       keeping them out of the way of the walkable 3D view underneath. */
     .panel-drag-handle { cursor: grab; touch-action: none; }
     .panel-drag-handle:active { cursor: grabbing; }
     .panel-drag-grip { color: var(--cal-text-muted); font-size: 12px; letter-spacing: -2px; margin-right: 2px; }
     .panel-body { display: flex; flex-direction: column; gap: 10px; }
     #weekNotesModal.panel-collapsed .panel-body,
-    #dayTasksModal.panel-collapsed .panel-body,
-    #dayLabel.panel-collapsed .panel-body { display: none; }
+    #dayTasksModal.panel-collapsed .panel-body { display: none; }
     #weekNotesModal.panel-collapsed,
     #dayTasksModal.panel-collapsed { gap: 0; padding-bottom: 10px; }
 
@@ -497,51 +447,6 @@ function getCalendarWalkHtml(
       #monthLauncherBtn { width: 44px; height: 44px; }
     }
 
-    /* My City launcher: mirrors the month launcher on the opposite side --
-       opens the catalogue of banked study buildings. */
-    #cityLauncherBtn {
-      position: absolute; left: 14px; top: 50%; transform: translateY(-50%); z-index: 28;
-      width: 52px; height: 52px; border-radius: 50%;
-      border: 1.5px solid var(--cal-surface-border); background: #3d7355; color: #ffffff;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-      cursor: pointer; box-shadow: var(--cal-shadow);
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); user-select: none;
-    }
-    #cityLauncherBtn:hover { transform: translateY(-50%) scale(1.08); }
-    #cityLauncherBtn:active { transform: translateY(-50%) scale(0.94); }
-    #cityLauncherBtn .launcher-icon { font-size: 17px; line-height: 1; }
-    #cityLauncherBtn .launcher-abbr { font-size: 9px; font-weight: 800; letter-spacing: 0.02em; }
-    @media (max-height: 640px) { #cityLauncherBtn { width: 44px; height: 44px; } }
-
-    /* My City catalogue: every banked building, grouped into one "street"
-       per assignment and ordered chronologically by the day it was earned
-       -- the row reads left-to-right as a walkable timeline of that
-       assignment's progress, with the capstone (final review/submit day)
-       marked distinctly at the end. Only what's actually been banked shows
-       up here; nothing punitive for days not yet reached. */
-    #myCityOverlay {
-      position: absolute; inset: 0; z-index: 66; background: var(--cal-modal-surface);
-      opacity: 0; pointer-events: none; transform: translateY(12px);
-      transition: opacity 0.22s ease, transform 0.22s ease;
-      display: flex; flex-direction: column; color: var(--cal-modal-text);
-    }
-    #myCityOverlay.active { opacity: 1; pointer-events: auto; transform: translateY(0); }
-    #myCityContent { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 20px; }
-    .city-empty { text-align: center; color: var(--cal-text-muted); font-size: 13px; padding: 40px 24px; line-height: 1.5; }
-    .city-street { display: flex; flex-direction: column; gap: 8px; }
-    .city-street-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-    .city-street-title { font-family: var(--font-display); font-weight: 800; font-size: 14px; }
-    .city-street-progress { font-size: 11px; color: var(--cal-accent); font-weight: 700; white-space: nowrap; }
-    .city-street-row { display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 8px; }
-    .city-building-card {
-      flex-shrink: 0; width: 84px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-      background: var(--cal-surface); border: 1.5px solid var(--cal-surface-border); border-radius: 14px;
-      padding: 10px 6px 8px;
-    }
-    .city-building-card.is-capstone { border-color: #d4af37; background: rgba(212, 175, 55, 0.08); }
-    .city-building-icon { font-size: 26px; line-height: 1; }
-    .city-building-date { font-size: 9.5px; color: var(--cal-text-muted); font-weight: 700; text-align: center; }
-    .city-building-star { font-size: 10px; }
   </style>
 </head>
 <body>
@@ -555,24 +460,6 @@ function getCalendarWalkHtml(
       <span class="launcher-abbr" id="monthLauncherAbbr">--</span>
     </button>
 
-    <!-- My City launcher: opens the catalogue of banked study buildings -->
-    <button id="cityLauncherBtn" aria-label="My City" type="button">
-      <span class="launcher-icon">&#127961;</span>
-      <span class="launcher-abbr" id="cityLauncherCount">0</span>
-    </button>
-
-    <div id="myCityOverlay" aria-label="My City">
-      <div class="month-grid-header">
-        <button class="month-grid-back" id="myCityBackBtn" type="button" aria-label="Close">&lt;</button>
-        <div class="study-plan-header-text">
-          <span class="month-grid-title">My City</span>
-          <span class="study-plan-sub" id="myCitySubtitle">0 buildings banked</span>
-        </div>
-        <span style="width:34px;"></span>
-      </div>
-      <div id="myCityContent"></div>
-    </div>
-
     <div id="monthGridOverlay" aria-label="Month picker">
       <div class="month-grid-header">
         <button class="month-grid-back" id="monthGridBackBtn" type="button" aria-label="Close">&lt;</button>
@@ -584,33 +471,6 @@ function getCalendarWalkHtml(
         </div>
       </div>
       <div class="month-grid" id="monthGrid"></div>
-    </div>
-
-    <div id="dayLabel">
-      <div class="hud-drag-handle panel-drag-handle" aria-hidden="true"><span class="hud-drag-bar"></span></div>
-      <div class="hud-header">
-        <div class="hud-date-row">
-          <span>Standing on</span>
-          <span id="dayValue">--</span>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="hud-badge" id="hudBadge">Active Tile</span>
-          <button class="hud-collapse-btn" id="hudCollapseBtn" type="button" aria-label="Expand">&#43;</button>
-        </div>
-      </div>
-      <div class="panel-body">
-        <div class="hud-task-row" id="hudTaskRow">
-          <span id="hudTask"></span>
-        </div>
-      </div>
-      <div class="hud-btn-row">
-        <button class="hud-notes-btn" id="hudNotesBtn" type="button">
-          <span>Notes</span><span class="count" id="hudNotesCount">0</span>
-        </button>
-        <button class="hud-notes-btn hud-tasks-btn" id="hudTasksBtn" type="button">
-          <span>Tasks</span><span class="count" id="hudTasksCount">0</span>
-        </button>
-      </div>
     </div>
 
     <div id="weekNotesModal">
@@ -629,17 +489,6 @@ function getCalendarWalkHtml(
         <div class="notes-input-row">
           <input type="text" id="noteInput" class="notes-textarea" placeholder="Add a note for this day..." autocomplete="off" />
           <button id="addNoteBtn" class="notes-add-btn">Add</button>
-        </div>
-        <div class="crystal-controls">
-          <span class="crystal-controls-label">Crystals</span>
-          <div class="crystal-slider-group">
-            <span title="Crystal size">Size</span>
-            <input type="range" id="crystalSizeSlider" min="0.5" max="1.6" step="0.05" value="1" />
-          </div>
-          <div class="crystal-slider-group">
-            <span title="Glow">Glow</span>
-            <input type="range" id="crystalGlowSlider" min="0" max="2" step="0.1" value="1" />
-          </div>
         </div>
       </div>
     </div>
@@ -807,7 +656,6 @@ function getCalendarWalkHtml(
     const TASK_MULTIPLIER_KEY = 'calendar_walk_task_multiplier_' + (STUDENT_ID || 'guest');
     const CURRENT_BG_URL = ${JSON.stringify(currentBgUrl || '')};
     const IS_DARK_MODE = ${JSON.stringify(Boolean(isDarkMode))};
-    const CRYSTAL_SETTINGS_KEY = 'calendar_walk_crystal_settings_' + (STUDENT_ID || 'guest');
 
     const TODAY = new Date();
     TODAY.setHours(0, 0, 0, 0);
@@ -836,10 +684,8 @@ function getCalendarWalkHtml(
     }
 
     // ------------------------------------------------------------------
-    // Per-background theme -- extends the same theme language the note
-    // crystals already use to the calendar object itself, so the physical
-    // calendar belongs to whichever world the student picked, not just its
-    // rewards.
+    // Per-background theme -- the physical calendar (plinth/card/ring
+    // colors, flip style) belongs to whichever world the student picked.
     // ------------------------------------------------------------------
     const MINECRAFT_BG_URL = '/backgrounds/minecraft-scene.png';
     const LOTR_BG_URL = '/backgrounds/lotr-shire.png';
@@ -851,45 +697,25 @@ function getCalendarWalkHtml(
         key: 'minecraft', label: 'Voxel Amethyst',
         plinth: 0x5b4636, card: 0xd9c9a3, cardToday: 0x8a5cff, cardPad: 0xb9a67e, ring: 0x9a9a9a, ringMetal: 0.8, ringRough: 0.5,
         flip: 'snap',
-        crystal: {
-          color: 0xa878e8, attenuation: 0x5b2f96, emissive: 0x8a5cff, hueJitter: 0.05,
-          transmission: 0.15, roughness: 0.42, clearcoat: 0.0, clearcoatRoughness: 0.3, ior: 1.4,
-          glowBase: 0.4, tilt: 0.12, spread: 0.8,
-          shape: { baseRMin: 0.22, baseRRange: 0.08, shaftHMin: 0.45, shaftHRange: 0.15, taperMin: 0.9, taperRange: 0.08, apexJitter: 0.06 },
-        },
+        accent: 0x8a5cff,
       },
       lotr: {
         key: 'lotr', label: 'Mithril Bloom',
         plinth: 0x4a4331, card: 0xf3ecd8, cardToday: 0xcfd8ff, cardPad: 0xe1dabf, ring: 0xc8ccd4, ringMetal: 0.9, ringRough: 0.15,
         flip: 'elegant',
-        crystal: {
-          color: 0xe4ecff, attenuation: 0x5578b8, emissive: 0xcfd8ff, hueJitter: 0.035,
-          transmission: 0.85, roughness: 0.04, clearcoat: 0.6, clearcoatRoughness: 0.08, ior: 1.6,
-          glowBase: 0.55, tilt: 0.22, spread: 0.7,
-          shape: { baseRMin: 0.1, baseRRange: 0.06, shaftHMin: 0.65, shaftHRange: 0.2, taperMin: 0.62, taperRange: 0.18, apexJitter: 0.1 },
-        },
+        accent: 0xcfd8ff,
       },
       pooh: {
         key: 'pooh', label: 'Honey Bloom',
         plinth: 0xc9a875, card: 0xfff6e6, cardToday: 0xffdca6, cardPad: 0xe9d3a8, ring: 0xb98a4a, ringMetal: 0.2, ringRough: 0.6,
         flip: 'bouncy',
-        crystal: {
-          color: 0xf7d38c, attenuation: 0xa8631a, emissive: 0xffb84d, hueJitter: 0.07,
-          transmission: 0.4, roughness: 0.3, clearcoat: 0.15, clearcoatRoughness: 0.25, ior: 1.35,
-          glowBase: 0.75, tilt: 0.45, spread: 1.1,
-          shape: { baseRMin: 0.22, baseRRange: 0.12, shaftHMin: 0.32, shaftHRange: 0.14, taperMin: 0.85, taperRange: 0.1, apexJitter: 0.04 },
-        },
+        accent: 0xffb84d,
       },
       default: {
         key: 'default', label: 'Amethyst',
         plinth: 0xa9bcc9, card: 0xf4f2ec, cardToday: 0xbfe0cb, cardPad: 0xdcdfd8, ring: 0x8fae9c, ringMetal: 0.35, ringRough: 0.4,
         flip: 'clean',
-        crystal: {
-          color: 0xa878e8, attenuation: 0x6b2fb0, emissive: 0x8a5cff, hueJitter: 0.065,
-          transmission: 0.7, roughness: 0.05, clearcoat: 0.5, clearcoatRoughness: 0.12, ior: 1.55,
-          glowBase: 0.3, tilt: 0.35, spread: 1.0,
-          shape: { baseRMin: 0.16, baseRRange: 0.1, shaftHMin: 0.55, shaftHRange: 0.2, taperMin: 0.78, taperRange: 0.16, apexJitter: 0.07 },
-        },
+        accent: 0x8a5cff,
       },
     };
 
@@ -1162,8 +988,10 @@ function getCalendarWalkHtml(
     // 58deg / (0,34,52)) -- the old framing felt tightly zoomed in on the
     // character, leaving little breathing room around the HUD panels
     // layered on top of the scene.
+    // Pulled back further still (was 0,42,66) so more of the calendar is
+    // visible around the character, ahead of the GUI redesign.
     const camera = new THREE.PerspectiveCamera(64, window.innerWidth / window.innerHeight, 0.1, 500);
-    const cameraOffset = new THREE.Vector3(0, 42, 66);
+    const cameraOffset = new THREE.Vector3(0, 51, 80);
     camera.position.copy(cameraOffset);
     camera.lookAt(0, 6, 40);
 
@@ -1471,194 +1299,6 @@ function getCalendarWalkHtml(
     }
 
     // ------------------------------------------------------------------
-    // Note crystals -- one small cluster per note left on a day, capped,
-    // deterministically seeded so a date's crystals look the same on every
-    // future visit. Adapted to the classic THREE.MeshPhysicalMaterial /
-    // InstancedMesh API this scene's r128 build supports (transmission /
-    // ior / clearcoat / per-instance setColorAt all confirmed working in
-    // r128; thickness / attenuationColor / dispersion / iridescence do not
-    // exist yet in that version and are intentionally omitted).
-    // ------------------------------------------------------------------
-    function crystalMulberry32(seed) {
-      let a = seed >>> 0;
-      return function () {
-        a |= 0; a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-    function crystalEaseOutBack(t) {
-      const c1 = 1.20158, c3 = c1 + 1, u = t - 1;
-      return 1 + c3 * u * u * u + c1 * u * u;
-    }
-
-    function makeCrystalGeometry(rnd, shape) {
-      const sides = 6;
-      const baseR = shape.baseRMin + rnd() * shape.baseRRange;
-      const shaftH = shape.shaftHMin + rnd() * shape.shaftHRange;
-      const taper = shape.taperMin + rnd() * shape.taperRange;
-      const apex = new THREE.Vector3((rnd() - 0.5) * shape.apexJitter * 2, 1, (rnd() - 0.5) * shape.apexJitter * 2);
-      const angles = [], radii = [];
-      for (let i = 0; i < sides; i++) {
-        angles.push(((i + (rnd() - 0.5) * 0.34) / sides) * Math.PI * 2);
-        radii.push(baseR * (0.8 + rnd() * 0.4));
-      }
-      const lower = [], upper = [];
-      for (let i = 0; i < sides; i++) {
-        const c = Math.cos(angles[i]), s = Math.sin(angles[i]);
-        lower.push(new THREE.Vector3(c * radii[i], 0, s * radii[i]));
-        upper.push(new THREE.Vector3(c * radii[i] * taper, shaftH, s * radii[i] * taper));
-      }
-      const positions = [];
-      const push3 = (a, b, c) => { positions.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z); };
-      const bottom = new THREE.Vector3(0, -0.02, 0);
-      for (let i = 0; i < sides; i++) {
-        const j = (i + 1) % sides;
-        push3(lower[i], upper[i], upper[j]);
-        push3(lower[i], upper[j], lower[j]);
-        push3(upper[i], apex, upper[j]);
-        push3(lower[j], bottom, lower[i]);
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.computeVertexNormals();
-      return geo;
-    }
-
-    const CRYSTAL_VARIANTS = 4;
-    let crystalVariantGeos = null;
-    function getCrystalVariantGeometries() {
-      if (!crystalVariantGeos) {
-        const rnd = crystalMulberry32(0xc0ffee + ACTIVE_THEME_KEY.length * 97);
-        crystalVariantGeos = [];
-        for (let i = 0; i < CRYSTAL_VARIANTS; i++) crystalVariantGeos.push(makeCrystalGeometry(rnd, ACTIVE_THEME.crystal.shape));
-      }
-      return crystalVariantGeos;
-    }
-
-    let crystalEnvMap = null;
-    function getCrystalEnvMap() {
-      if (crystalEnvMap) return crystalEnvMap;
-      const envScene = new THREE.Scene();
-      const skyColor = new THREE.Color(WORLD_COLOR).lerp(new THREE.Color(0xffffff), 0.5);
-      envScene.background = skyColor;
-      const glow = new THREE.PointLight(ACTIVE_THEME.crystal.emissive, 2, 30);
-      glow.position.set(4, 6, 4);
-      envScene.add(glow);
-      const pmrem = new THREE.PMREMGenerator(renderer);
-      crystalEnvMap = pmrem.fromScene(envScene, 0.04).texture;
-      pmrem.dispose();
-      return crystalEnvMap;
-    }
-
-    let crystalMaterial = null;
-    let crystalGlowMultiplier = 1;
-    let crystalSizeMultiplier = 1;
-    function getCrystalMaterial() {
-      if (crystalMaterial) return crystalMaterial;
-      const t = ACTIVE_THEME.crystal;
-      crystalMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0xffffff, metalness: 0, roughness: t.roughness, transmission: t.transmission, ior: t.ior,
-        clearcoat: t.clearcoat, clearcoatRoughness: t.clearcoatRoughness, emissive: t.emissive,
-        emissiveIntensity: t.glowBase * crystalGlowMultiplier, envMap: getCrystalEnvMap(), envMapIntensity: 1.3,
-      });
-      return crystalMaterial;
-    }
-
-    const MAX_NOTE_CLUSTERS = 6;
-    const CRYSTAL_LAYOUT_SCALE = 2.6;
-    const _crystalM = new THREE.Matrix4();
-    const _crystalDir = new THREE.Vector3();
-    const _crystalAlign = new THREE.Quaternion();
-    const _crystalY = new THREE.Vector3(0, 1, 0);
-    const _crystalHsl = { h: 0, s: 0, l: 0 };
-    const _crystalColor = new THREE.Color();
-    const CRYSTAL_HEIGHT_MIN = 0.14, CRYSTAL_HEIGHT_MAX = 1.5;
-
-    function buildCrystalCluster(targetGroup, seedKey, noteCount) {
-      if (noteCount <= 0) return;
-      const clusters = Math.min(noteCount, MAX_NOTE_CLUSTERS);
-      let seedNum = 0;
-      for (let i = 0; i < seedKey.length; i++) seedNum = (seedNum * 31 + seedKey.charCodeAt(i)) | 0;
-      const rnd = crystalMulberry32((0x9e3779b9 ^ seedNum) >>> 0);
-      const geos = getCrystalVariantGeometries();
-      const mat = getCrystalMaterial();
-      const theme = ACTIVE_THEME.crystal;
-
-      const byVariant = [];
-      for (let i = 0; i < geos.length; i++) byVariant.push([]);
-
-      for (let c = 0; c < clusters; c++) {
-        const azOffset = rnd() * Math.PI * 2;
-        const radiusOffset = 0.3 + rnd() * 0.5;
-        const cx = Math.cos(azOffset) * radiusOffset * theme.spread * CRYSTAL_LAYOUT_SCALE;
-        const cz = Math.sin(azOffset) * radiusOffset * theme.spread * CRYSTAL_LAYOUT_SCALE;
-        const items = [];
-        items.push({ heightBase: 1.1 + rnd() * 0.4, tiltScale: 0.5, widthMul: 0.85 + rnd() * 0.3, offFrac: 0, offAz: 0 });
-        const shardCount = 2 + Math.floor(rnd() * 2);
-        for (let s = 0; s < shardCount; s++) items.push({ heightBase: 0.4 + rnd() * 0.35, tiltScale: 1, widthMul: 0.8 + rnd() * 0.4, offFrac: 0.3 + rnd() * 0.6, offAz: rnd() * Math.PI * 2 });
-        const rubbleCount = 1 + Math.floor(rnd() * 2);
-        for (let r = 0; r < rubbleCount; r++) items.push({ heightBase: 0.14 + rnd() * 0.1, tiltScale: 1.3, widthMul: 1.1 + rnd() * 0.3, offFrac: 0.6 + rnd() * 0.5, offAz: rnd() * Math.PI * 2 });
-
-        for (const item of items) {
-          const variant = Math.floor(rnd() * geos.length);
-          byVariant[variant].push({
-            x: cx + Math.cos(item.offAz) * item.offFrac * theme.spread * CRYSTAL_LAYOUT_SCALE * 0.35,
-            z: cz + Math.sin(item.offAz) * item.offFrac * theme.spread * CRYSTAL_LAYOUT_SCALE * 0.35,
-            heightBase: item.heightBase, tiltScale: item.tiltScale, widthMul: item.widthMul,
-            leanRnd: rnd(), leanAz: rnd() * Math.PI * 2, spin: rnd() * Math.PI * 2,
-            hueRnd: rnd(), satRnd: rnd(), lightRnd: rnd(),
-          });
-        }
-      }
-
-      const crystalSize = 1.9 * crystalSizeMultiplier;
-      const baseColor = new THREE.Color(theme.color);
-      const attnColor = new THREE.Color(theme.attenuation);
-
-      for (let v = 0; v < geos.length; v++) {
-        const list = byVariant[v];
-        if (list.length === 0) continue;
-        const mesh = new THREE.InstancedMesh(geos[v], mat, list.length);
-        mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false;
-        for (let i = 0; i < list.length; i++) {
-          const inst = list[i];
-          const h = inst.heightBase * crystalSize;
-          const w = h * inst.widthMul;
-          const lean = theme.tilt * inst.tiltScale * (0.3 + inst.leanRnd * 0.7) * 0.9;
-          _crystalDir.set(0, Math.cos(lean), 0).addScaledVector(new THREE.Vector3(Math.cos(inst.leanAz), 0, Math.sin(inst.leanAz)), Math.sin(lean)).normalize();
-          _crystalAlign.setFromUnitVectors(_crystalY, _crystalDir);
-          const quat = new THREE.Quaternion().setFromAxisAngle(_crystalDir, inst.spin).multiply(_crystalAlign);
-          _crystalM.compose(new THREE.Vector3(inst.x, -0.04 * h, inst.z), quat, new THREE.Vector3(w, h, w));
-          mesh.setMatrixAt(i, _crystalM);
-
-          const depthT = THREE.MathUtils.clamp((inst.heightBase - CRYSTAL_HEIGHT_MIN) / (CRYSTAL_HEIGHT_MAX - CRYSTAL_HEIGHT_MIN), 0, 1);
-          const attnMix = THREE.MathUtils.clamp(0.12 + depthT * 0.5 + inst.satRnd * 0.18, 0, 1);
-          const color = _crystalColor.copy(baseColor).lerp(attnColor, attnMix);
-          color.getHSL(_crystalHsl);
-          color.setHSL(
-            (_crystalHsl.h + (inst.hueRnd - 0.5) * theme.hueJitter + 1) % 1,
-            THREE.MathUtils.clamp(_crystalHsl.s * (1.05 + inst.satRnd * 0.35), 0, 1),
-            THREE.MathUtils.clamp(_crystalHsl.l * (0.55 + inst.lightRnd * 0.65), 0, 1)
-          );
-          mesh.setColorAt(i, color);
-        }
-        mesh.instanceMatrix.needsUpdate = true;
-        if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-        targetGroup.add(mesh);
-      }
-    }
-
-    function clearCrystalGroup(group) {
-      while (group.children.length > 0) {
-        const mesh = group.children[0];
-        group.remove(mesh);
-        mesh.dispose();
-      }
-    }
-
-    // ------------------------------------------------------------------
     // Month pages -- two live at once (current + next/prev, prebuilt just
     // before a flip), both children of "stage".
     // ------------------------------------------------------------------
@@ -1728,196 +1368,143 @@ function getCalendarWalkHtml(
         faceMesh.position.set(x, CARD_TOP_Y + 0.06, z);
         group.add(faceMesh);
 
-        const crystalGroup = new THREE.Group();
-        crystalGroup.position.set(x, CARD_TOP_Y + 0.1, z);
-        group.add(crystalGroup);
-
-        // Test: wherever the study-plan estimator has assigned a study
-        // session, a small building model from the Little Big City asset
-        // set appears on that day's tile -- see applyStudyMarkersToPage().
+        // Holds this tile's Classroom-brief breadcrumb marker, if any --
+        // see buildTaskTrails()'s waypoint block below.
         const studyMarkerGroup = new THREE.Group();
         studyMarkerGroup.position.set(x, CARD_TOP_Y + 0.05, z);
         group.add(studyMarkerGroup);
 
-        dayEntries.set(key, { date, row, col, isPadding, crystalGroup, studyMarkerGroup, noteCount: 0, growT: 1 });
+        dayEntries.set(key, { date, row, col, isPadding, studyMarkerGroup });
       }
 
-      return { group, year, month, dayEntries };
+      // Deadline trail -- one glowing tube per task-with-a-due-date, laid
+      // through the actual sequence of day tiles between today and that
+      // due date. See buildTaskTrails() below for why it's a continuous
+      // path through every day (not just the sparse study-marker days).
+      const trailGroup = new THREE.Group();
+      group.add(trailGroup);
+
+      return { group, year, month, dayEntries, trailGroup };
     }
 
-    function syncPageCrystals(page, animateChangedOnly) {
-      page.dayEntries.forEach((entry, key) => {
-        const count = (DAY_NOTES[key] || []).length;
-        if (count === entry.noteCount) return;
-        clearCrystalGroup(entry.crystalGroup);
-        if (count > 0) buildCrystalCluster(entry.crystalGroup, key, count);
-        const wasZero = entry.noteCount === 0;
-        entry.noteCount = count;
-        if (animateChangedOnly && count > 0 && wasZero) {
-          entry.growT = 0;
-          entry.crystalGroup.scale.setScalar(0.001);
-        } else {
-          entry.growT = 1;
-          entry.crystalGroup.scale.setScalar(1);
-        }
-      });
-    }
+    // ------------------------------------------------------------------
+    // Deadline trails -- addresses time blindness directly: a due date
+    // sitting as a lone marker still asks the student to hold "how far
+    // away is that" in their head. A continuous glowing path from today's
+    // tile, through every day between, to the due-date tile turns that
+    // into something they can just look at. Deliberately walks EVERY
+    // calendar day in the range (not only the sparse days the study-plan
+    // estimator assigned a building to) -- the trail represents the whole
+    // stretch of time, not just the days with work scheduled on them.
+    // Colour and pulse speed both track urgency (days remaining), so a
+    // closer deadline visibly glows faster without needing to read a
+    // number -- same externalize-the-time-sense idea as the walk itself.
+    const TRAIL_MAX_URGENT_DAYS = 21; // beyond this, trail reads as "calm/far away" and stops changing further
 
-    function rebuildPageCrystals(page) {
-      page.dayEntries.forEach((entry, key) => {
-        clearCrystalGroup(entry.crystalGroup);
-        if (entry.noteCount > 0) buildCrystalCluster(entry.crystalGroup, key, entry.noteCount);
-      });
+    // Breadcrumb waypoints -- dates parsed out of a Classroom brief's own
+    // text (see extractDateWaypoints() in classroom-coursework.js), placed
+    // on the tile they fall on. Deliberately one plain, generic marker
+    // shape reused everywhere: there's no free way to know what a given
+    // date in a brief actually represents (a task, a check-in, a
+    // presentation), so this doesn't pretend to -- it just turns "there is
+    // something at this point in the wall of text" into a visible, walkable
+    // stepping stone, breaking one long undifferentiated brief into a
+    // sequence of small, already-sized landmarks along the trail.
+    let waypointGeoCache = null;
+    function getWaypointGeometry() {
+      if (waypointGeoCache) return waypointGeoCache;
+      waypointGeoCache = new THREE.SphereGeometry(0.55, 12, 10);
+      return waypointGeoCache;
     }
-
-    // Test: place a small building model on every day tile the study-plan
-    // estimator has assigned a study session to, across ALL tasks that have
-    // a due date. Starts locked (grey, unclaimable) -- it only unlocks to
-    // its real look once the step mapped to that day is actually checked
-    // off, at which point it can be tapped to bank it into a personal
-    // reserve for later use in Little Big City. Two model variants (only
-    // V1/V2 resolve on that asset host -- V3+ all 404) alternate per date
-    // for visual variety.
-    const STUDY_BUILDING_MODEL_URLS = [
-      'https://skyworldv1.netlify.app/assets/ToykobuildingV1.glb',
-      'https://skyworldv1.netlify.app/assets/ToykobuildingV2.glb',
-    ];
-    // The two source GLBs are authored at very different native scales, so
-    // a single flat multiplier made one tower over the character and the
-    // other barely register. Normalize each template to the SAME target
-    // height instead -- verified via direct bounding-box measurement that
-    // both models land on the exact same true rendered height this way.
-    const STUDY_BUILDING_TARGET_HEIGHT = 5.5;
-    // A day's building height also encodes its estimated workload, so
-    // walking (or just glancing at) the calendar reads as a quick-scan
-    // overview of which days are light vs heavy before a single panel is
-    // opened. REFERENCE_MINUTES is the session length that renders at the
-    // normalized target height (1x); shorter/longer days scale down/up
-    // from there, clamped so a single heavy day never swallows the tile or
-    // a light one vanishes to nothing.
-    const STUDY_BUILDING_REFERENCE_MINUTES = 25;
-    const STUDY_BUILDING_MIN_SIZE_FACTOR = 0.6;
-    const STUDY_BUILDING_MAX_SIZE_FACTOR = 2.0;
-    const studyBuildingTemplates = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(null);
-    const studyBuildingScales = new Array(STUDY_BUILDING_MODEL_URLS.length).fill(1);
-    const BUILDING_RESERVE_KEY = 'calendar_walk_building_reserve_' + (STUDENT_ID || 'guest');
-    const claimedStudyDayKeys = new Set(loadBuildingReserve().map((b) => b.claimId));
-
-    function loadBuildingReserve() {
-      try {
-        const raw = localStorage.getItem(BUILDING_RESERVE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) { return []; }
-    }
-    function saveBuildingReserve(list) {
-      try { localStorage.setItem(BUILDING_RESERVE_KEY, JSON.stringify(list)); } catch (e) {}
-    }
-
-    STUDY_BUILDING_MODEL_URLS.forEach((url, i) => {
-      new THREE.GLTFLoader().load(url, (gltf) => {
-        const template = gltf.scene;
-        const box = new THREE.Box3().setFromObject(template);
-        const nativeHeight = Math.max(0.001, box.max.y - box.min.y);
-        studyBuildingScales[i] = STUDY_BUILDING_TARGET_HEIGHT / nativeHeight;
-        studyBuildingTemplates[i] = template;
-        refreshStudyMarkers();
-      }, undefined, (error) => console.warn('Study building model failed to load: ' + url, error));
+    const waypointMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf2b705, emissive: 0xf2b705, emissiveIntensity: 0.45, roughness: 0.4, metalness: 0.05,
     });
 
-    const LOCKED_BUILDING_MATERIAL = new THREE.MeshStandardMaterial({ color: 0x9a9a9a, roughness: 0.95, metalness: 0.02 });
+    function buildTaskTrails(page) {
+      if (!page || !page.trailGroup) return;
+      while (page.trailGroup.children.length) {
+        const child = page.trailGroup.children[0];
+        page.trailGroup.remove(child);
+        child.geometry.dispose();
+        child.material.dispose();
+      }
+      page.dayEntries.forEach((entry) => {
+        while (entry.studyMarkerGroup.children.length) entry.studyMarkerGroup.remove(entry.studyMarkerGroup.children[0]);
+      });
+      const todayDate = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
+      const msPerDay = 86400000;
 
-    // Every scheduled day maps to exactly one of the task's decoded steps
-    // (spread proportionally across however many day-segments the plan has),
-    // so "achieved" means that specific step is checked off -- not the
-    // whole task -- which is what lets each day's building unlock on its
-    // own as the student actually works through the steps.
-    function getScheduledStudyEntries() {
-      const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
-      const map = {};
       Object.keys(DAY_TASKS).forEach((dayKey) => {
         (DAY_TASKS[dayKey] || []).forEach((task) => {
           if (!task.dueDateISO) return;
-          const nodes = buildStudyPlanNodes(task);
-          nodes.forEach((n) => {
-            const key = isoKey(addDays(today, n.dateOffset));
-            if (map[key]) return; // first task/day wins on a clash
-            const step = task.decodedSteps[n.stepIndex] || null;
-            const claimId = task.id + '_' + key;
-            map[key] = {
-              task, key, isFinal: n.isFinal, minutes: n.minutes,
-              achieved: !!(step && step.done),
-              claimed: claimedStudyDayKeys.has(claimId),
-              claimId,
-            };
+          const due = new Date(task.dueDateISO + 'T00:00:00');
+          const totalDays = Math.round((due - todayDate) / msPerDay);
+          if (totalDays < 1) return; // due today or already past -- nothing forward to walk
+
+          const points = [];
+          for (let offset = 0; offset <= totalDays; offset++) {
+            const entry = page.dayEntries.get(isoKey(addDays(todayDate, offset)));
+            if (entry) {
+              points.push(new THREE.Vector3(
+                -GRID_W / 2 + (entry.col + 0.5) * CELL,
+                CARD_TOP_Y + 0.09,
+                entry.row * CELL
+              ));
+            }
+          }
+          if (points.length < 2) return; // this page only shows one end of the trail (or none) -- nothing to draw here
+
+          // Straight segments between consecutive day-tiles, not a smoothed
+          // spline through all of them -- a week-wrap turn (end of one row
+          // to the start of the next) is a sharp corner, and CatmullRom
+          // badly overshoots/bulges at sharp corners, sending the tube
+          // swinging through unrelated tiles instead of tracing the real
+          // path. A CurvePath of straight LineCurve3 segments can't overshoot.
+          const curve = new THREE.CurvePath();
+          for (let i = 0; i < points.length - 1; i++) {
+            curve.add(new THREE.LineCurve3(points[i], points[i + 1]));
+          }
+          const tubeGeo = new THREE.TubeGeometry(curve, Math.max(8, points.length * 6), 0.14, 6, false);
+          const urgency = THREE.MathUtils.clamp(1 - (totalDays / TRAIL_MAX_URGENT_DAYS), 0, 1);
+          const trailColor = new THREE.Color(0x6fb7a6).lerp(new THREE.Color(0xe0a23a), urgency);
+          const mat = new THREE.MeshBasicMaterial({ color: trailColor, transparent: true, opacity: 0.5 });
+          const tube = new THREE.Mesh(tubeGeo, mat);
+          tube.userData.pulseSpeed = 0.5 + urgency * 2.2; // calm/slow far out, faster near the deadline
+          tube.userData.baseOpacity = 0.38 + urgency * 0.32;
+          page.trailGroup.add(tube);
+
+          (task.waypoints || []).forEach((wp) => {
+            const wpDate = new Date(wp.dateISO + 'T00:00:00');
+            // Only ever within [today, the real due date] -- the due date
+            // itself is always Classroom's own structured field, never
+            // this parsing, so a brief's text mentioning a date past it
+            // (a real, messy possibility) just falls out of range here.
+            if (wpDate < todayDate || wpDate > due) return;
+            // dayEntries is keyed by isoKey()'s own loose "Y-M-D" format
+            // (unpadded, 0-indexed month) -- not the zero-padded "YYYY-MM-DD"
+            // wp.dateISO comes in as, so look it up via the same helper
+            // every other lookup on this map uses, not the raw string.
+            const entry = page.dayEntries.get(isoKey(wpDate));
+            if (!entry) return;
+            const marker = new THREE.Mesh(getWaypointGeometry(), waypointMaterial);
+            marker.position.set(0, 0.65, 0);
+            marker.castShadow = true;
+            entry.studyMarkerGroup.add(marker);
           });
         });
       });
-      return map;
     }
 
-    function claimStudyBuilding(claimId, task, dateKey, modelIndex, isFinal) {
-      if (claimedStudyDayKeys.has(claimId)) return;
-      claimedStudyDayKeys.add(claimId);
-      const reserve = loadBuildingReserve();
-      reserve.push({
-        claimId, taskId: task.id, taskLabel: task.rawText, taskDueDateISO: task.dueDateISO, dateKey,
-        modelUrl: STUDY_BUILDING_MODEL_URLS[modelIndex], modelIndex, isFinal: !!isFinal,
-        state: 'claimed', claimedAt: Date.now(),
-      });
-      saveBuildingReserve(reserve);
-      showRewardToast(isFinal ? 'Capstone banked -- nice work on this assignment!' : 'Building banked to your reserve!');
-      refreshStudyMarkers();
-      updateCityLauncherCount();
+    function refreshTaskTrails() {
+      buildTaskTrails(currentPage);
+      buildTaskTrails(nextPage);
     }
 
-    function applyStudyMarkersToPage(page) {
-      if (!page) return;
-      if (studyBuildingTemplates.every((t) => !t)) return;
-      const scheduled = getScheduledStudyEntries();
-      page.dayEntries.forEach((entry, key) => {
-        while (entry.studyMarkerGroup.children.length) entry.studyMarkerGroup.remove(entry.studyMarkerGroup.children[0]);
-        entry.studyMarkerGroup.userData.claimInfo = null;
-        const info = scheduled[key];
-        if (!info || info.claimed) return;
-        const modelIndex = entry.date.getDate() % studyBuildingTemplates.length;
-        const template = studyBuildingTemplates[modelIndex] || studyBuildingTemplates.find((t) => t);
-        if (!template) return;
-        const model = template.clone(true);
-        const sizeFactor = THREE.MathUtils.clamp(
-          (info.minutes || STUDY_BUILDING_REFERENCE_MINUTES) / STUDY_BUILDING_REFERENCE_MINUTES,
-          STUDY_BUILDING_MIN_SIZE_FACTOR, STUDY_BUILDING_MAX_SIZE_FACTOR
-        );
-        model.scale.setScalar((studyBuildingScales[modelIndex] || STUDY_BUILDING_TARGET_HEIGHT) * sizeFactor);
-        model.traverse((o) => {
-          if (o.isMesh) {
-            o.castShadow = true;
-            o.receiveShadow = true;
-            if (!info.achieved) {
-              o.userData.originalMaterial = o.material;
-              o.material = LOCKED_BUILDING_MATERIAL;
-            }
-          }
-        });
-        entry.studyMarkerGroup.add(model);
-        if (info.achieved) {
-          entry.studyMarkerGroup.userData.claimInfo = { claimId: info.claimId, task: info.task, dateKey: key, modelIndex, isFinal: info.isFinal };
-        }
-      });
-    }
-
-    function refreshStudyMarkers() {
-      applyStudyMarkersToPage(currentPage);
-      applyStudyMarkersToPage(nextPage);
-    }
-
-    function updateCrystalGrowth(dt) {
+    function pulseTaskTrails(elapsed) {
       [currentPage, nextPage].forEach((page) => {
-        if (!page) return;
-        page.dayEntries.forEach((entry) => {
-          if (entry.growT < 1) {
-            entry.growT = Math.min(1, entry.growT + dt / 0.6);
-            entry.crystalGroup.scale.setScalar(Math.max(0.001, crystalEaseOutBack(entry.growT)));
-          }
+        if (!page || !page.trailGroup) return;
+        page.trailGroup.children.forEach((tube) => {
+          tube.material.opacity = tube.userData.baseOpacity + Math.sin(elapsed * tube.userData.pulseSpeed) * 0.16;
         });
       });
     }
@@ -1925,8 +1512,21 @@ function getCalendarWalkHtml(
     let currentPage = buildMonthPage(TODAY.getFullYear(), TODAY.getMonth());
     currentPage.group.position.set(0, 0, 0);
     stage.add(currentPage.group);
-    syncPageCrystals(currentPage, false);
-    applyStudyMarkersToPage(currentPage);
+    buildTaskTrails(currentPage);
+
+    // Land the character on today's actual tile as soon as the 3D view
+    // opens, rather than always starting at the grid's fixed origin --
+    // "where am I right now" should be true the instant this loads, not
+    // something the student has to walk to find (see the double-click-to-
+    // walk-to-Today gesture below, which uses this same row/col lookup).
+    {
+      const todayIdx = buildMonthMatrix(currentPage.year, currentPage.month)
+        .findIndex((d) => isSameDate(d, TODAY));
+      const todayRow = todayIdx >= 0 ? Math.floor(todayIdx / GRID_COLS) : 0;
+      characterParent.position.x = -GRID_W / 2 + (TODAY.getDay() + 0.5) * CELL;
+      characterParent.position.z = todayRow * CELL;
+    }
+
     let nextPage = null;
     let flipState = null; // { direction, t, outgoing, incoming }
     const FLIP_DURATION = { snap: 0.55, elegant: 1.05, bouncy: 0.85, clean: 0.7 };
@@ -1951,8 +1551,7 @@ function getCalendarWalkHtml(
       const direction = customDirection !== undefined ? customDirection : (targetTotal > currTotal ? 1 : -1);
 
       nextPage = buildMonthPage(targetYear, targetMonth);
-      syncPageCrystals(nextPage, false);
-      applyStudyMarkersToPage(nextPage);
+      buildTaskTrails(nextPage);
       nextPage.group.position.set(0, 0, 0);
       stage.add(nextPage.group);
 
@@ -1989,7 +1588,6 @@ function getCalendarWalkHtml(
         currentPage = nextPage;
         nextPage = null;
         flipState = null;
-        clearFootprints();
         // Land the character appropriately in the new month
         if (currentPage.year === TODAY.getFullYear() && currentPage.month === TODAY.getMonth()) {
           const days = buildMonthMatrix(currentPage.year, currentPage.month);
@@ -2039,7 +1637,7 @@ function getCalendarWalkHtml(
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      const mat = new THREE.PointsMaterial({ color: ACTIVE_THEME.crystal.emissive, size: 0.9, transparent: true, opacity: 1, depthWrite: false });
+      const mat = new THREE.PointsMaterial({ color: ACTIVE_THEME.accent, size: 0.9, transparent: true, opacity: 1, depthWrite: false });
       flourishPoints = new THREE.Points(geo, mat);
       flourishPoints.userData.velocities = velocities;
       flourishPoints.userData.age = 0;
@@ -2066,7 +1664,7 @@ function getCalendarWalkHtml(
     let characterRoot = null, mixer = null;
     const actionsByName = {};
     let currentActionName = null;
-    let leftFootBone = null, rightFootBone = null, hipsBone = null, hipsRestPosition = null;
+    let hipsBone = null, hipsRestPosition = null;
 
     function switchAnimation(name) {
       if (currentActionName === name) return;
@@ -2086,8 +1684,6 @@ function getCalendarWalkHtml(
       mixer = new THREE.AnimationMixer(characterRoot);
       gltf.animations.forEach((clip) => { actionsByName[clip.name] = mixer.clipAction(clip); });
 
-      leftFootBone = characterRoot.getObjectByName('mixamorigLeftFoot');
-      rightFootBone = characterRoot.getObjectByName('mixamorigRightFoot');
       hipsBone = characterRoot.getObjectByName('mixamorigHips');
       if (hipsBone) hipsRestPosition = hipsBone.position.clone();
 
@@ -2122,8 +1718,8 @@ function getCalendarWalkHtml(
       // The toe-end joint sits inside the foot, not at the sole -- the shoe
       // mesh extends a bit below and around it, so landing the joint
       // exactly on the floor still buries the visible sole. Lift a little
-      // further so the sole itself rests on the surface.
-      const FOOT_SOLE_CLEARANCE = 1.4;
+      // further so the sole itself rests on the surface, not sunk into it.
+      const FOOT_SOLE_CLEARANCE = 2.0;
       characterRoot.position.y -= groundY - FOOT_SOLE_CLEARANCE;
 
       characterRoot.updateMatrixWorld(true);
@@ -2141,53 +1737,6 @@ function getCalendarWalkHtml(
     new THREE.AudioLoader().load(\`\${ASSET_BASE}/audio/snow-step.mp3\`, (buffer) => footstepSound.setBuffer(buffer));
 
     // ------------------------------------------------------------------
-    // Footprints
-    // ------------------------------------------------------------------
-    const FOOTPRINT_POOL_SIZE = 60;
-    const FOOTPRINT_STEP_INTERVAL = 0.26;
-    const FOOTPRINT_MAX_AGE = 12;
-    const footprintCanvas = document.createElement('canvas');
-    footprintCanvas.width = 64; footprintCanvas.height = 64;
-    const footprintCtx = footprintCanvas.getContext('2d');
-    const footGradient = footprintCtx.createRadialGradient(32, 32, 2, 32, 32, 30);
-    footGradient.addColorStop(0, 'rgba(60,55,50,0.85)');
-    footGradient.addColorStop(1, 'rgba(60,55,50,0)');
-    footprintCtx.fillStyle = footGradient;
-    footprintCtx.beginPath();
-    footprintCtx.ellipse(32, 32, 22, 30, 0, 0, Math.PI * 2);
-    footprintCtx.fill();
-    const footprintTexture = new THREE.CanvasTexture(footprintCanvas);
-    const footprintGeometry = new THREE.PlaneGeometry(1.3, 2.0);
-    const footprintPool = [];
-    for (let i = 0; i < FOOTPRINT_POOL_SIZE; i++) {
-      const material = new THREE.MeshBasicMaterial({ map: footprintTexture, color: 0x2b2620, transparent: true, opacity: 0, depthWrite: false });
-      const mesh = new THREE.Mesh(footprintGeometry, material);
-      mesh.rotation.set(-Math.PI / 2, 0, 0);
-      mesh.visible = false;
-      scene.add(mesh);
-      footprintPool.push({ mesh, stampedAt: -Infinity });
-    }
-    let nextFootprintIndex = 0, lastStepTime = -Infinity, stepOnLeft = true;
-    const footWorldPos = new THREE.Vector3();
-    function stampFootprint(worldX, worldZ, now) {
-      const entry = footprintPool[nextFootprintIndex];
-      nextFootprintIndex = (nextFootprintIndex + 1) % FOOTPRINT_POOL_SIZE;
-      const surfY = getSurfaceHeightAt(worldX, worldZ);
-      entry.mesh.position.set(worldX, surfY + 0.04, worldZ);
-      entry.mesh.visible = true;
-      entry.stampedAt = now;
-    }
-    function updateFootprints(now) {
-      footprintPool.forEach((entry) => {
-        if (!entry.mesh.visible) return;
-        const age = now - entry.stampedAt;
-        if (age > FOOTPRINT_MAX_AGE) { entry.mesh.visible = false; return; }
-        entry.mesh.material.opacity = 0.14 * (1 - age / FOOTPRINT_MAX_AGE);
-      });
-    }
-    function clearFootprints() { footprintPool.forEach((entry) => { entry.mesh.visible = false; }); }
-
-    // ------------------------------------------------------------------
     // Input, bounded movement, edge-flip trigger
     // ------------------------------------------------------------------
     const movement = { forward: false, backward: false, left: false, right: false };
@@ -2201,8 +1750,7 @@ function getCalendarWalkHtml(
         currentPage.group.position.set(0, 0, 0);
         currentPage.group.rotation.set(0, 0, 0);
         stage.add(currentPage.group);
-        syncPageCrystals(currentPage, false);
-        applyStudyMarkersToPage(currentPage);
+        buildTaskTrails(currentPage);
         updateMonthLauncher(TODAY.getFullYear(), TODAY.getMonth());
       }
       isAutoWalkingToToday = true;
@@ -2273,33 +1821,6 @@ function getCalendarWalkHtml(
       if (checkCharacterHit(e.clientX, e.clientY)) triggerWalkToToday();
     });
 
-    // Tapping an unlocked (achieved) study building banks it into the
-    // student's reserve. Locked (grey) buildings aren't in this hit-test
-    // set at all -- "unaccessible as an asset" until earned.
-    function checkStudyBuildingClaim(clientX, clientY) {
-      mousePos.x = (clientX / window.innerWidth) * 2 - 1;
-      mousePos.y = -(clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mousePos, camera);
-      const claimableGroups = [];
-      [currentPage, nextPage].forEach((page) => {
-        if (!page) return;
-        page.dayEntries.forEach((entry) => {
-          if (entry.studyMarkerGroup.userData.claimInfo) claimableGroups.push(entry.studyMarkerGroup);
-        });
-      });
-      if (claimableGroups.length === 0) return;
-      const hits = raycaster.intersectObjects(claimableGroups, true);
-      if (hits.length === 0) return;
-      let hitGroup = hits[0].object;
-      while (hitGroup && !hitGroup.userData.claimInfo) hitGroup = hitGroup.parent;
-      if (!hitGroup) return;
-      const info = hitGroup.userData.claimInfo;
-      claimStudyBuilding(info.claimId, info.task, info.dateKey, info.modelIndex, info.isFinal);
-    }
-    window.addEventListener('click', (e) => {
-      if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
-      checkStudyBuildingClaim(e.clientX, e.clientY);
-    });
     let lastTouchTapTime = 0, lastTouchTapX = 0, lastTouchTapY = 0;
     window.addEventListener('touchend', (e) => {
       if (e.target.closest('#weekNotesModal') || e.target.closest('#dayTasksModal') || e.target.closest('#dayLabel') || e.target.closest('#monthLauncherBtn') || e.target.closest('#monthGridOverlay') || e.target.closest('#focusEnergyPrompt') || e.target.closest('#focusTimerWidget') || e.target.closest('#studyPlanOverlay') || e.target.closest('#cityLauncherBtn') || e.target.closest('#myCityOverlay')) return;
@@ -2323,27 +1844,12 @@ function getCalendarWalkHtml(
     // currently stands on. No separate day-picker: walking there is how
     // you pick the date.
     // ------------------------------------------------------------------
-    const dayLabelEl = document.getElementById('dayLabel');
-    makePanelMoveableAndCollapsible(dayLabelEl, document.getElementById('hudCollapseBtn'));
-    // Starts collapsed -- a glanceable date pill rather than a persistent
-    // card, matching the "Notes"/"Tasks" count badges that stay visible
-    // either way. The button's "+" icon already matches this collapsed
-    // default (see the HTML).
-    if (dayLabelEl) dayLabelEl.classList.add('panel-collapsed');
-    const dayValueEl = document.getElementById('dayValue');
-    const hudBadgeEl = document.getElementById('hudBadge');
-    const hudTaskEl = document.getElementById('hudTask');
-    const hudTaskRowEl = document.getElementById('hudTaskRow');
-    const hudNotesBtn = document.getElementById('hudNotesBtn');
-    const hudNotesCount = document.getElementById('hudNotesCount');
     const weekNotesModalEl = document.getElementById('weekNotesModal');
     const notesWeekTitleEl = document.getElementById('notesWeekTitle');
     const notesListEl = document.getElementById('notesList');
     const noteInputEl = document.getElementById('noteInput');
     const addNoteBtnEl = document.getElementById('addNoteBtn');
     const notesCloseBtnEl = document.getElementById('notesCloseBtn');
-    const hudTasksBtn = document.getElementById('hudTasksBtn');
-    const hudTasksCount = document.getElementById('hudTasksCount');
     const dayTasksModalEl = document.getElementById('dayTasksModal');
     const tasksDayTitleEl = document.getElementById('tasksDayTitle');
     const tasksListEl = document.getElementById('tasksList');
@@ -2426,13 +1932,10 @@ function getCalendarWalkHtml(
       }
     }
 
-    function refreshHudForCurrentDay() {
-      if (!currentDateKey) return;
-      const count = (DAY_NOTES[currentDateKey] || []).length;
-      hudNotesCount.textContent = String(count);
-      const taskCount = (DAY_TASKS[currentDateKey] || []).length;
-      if (hudTasksCount) hudTasksCount.textContent = String(taskCount);
-    }
+    // No-op now that the Standing-on panel (and its Notes/Tasks count
+    // badges) has been removed -- kept as a function since callers still
+    // invoke it after notes/tasks change.
+    function refreshHudForCurrentDay() {}
 
     window.deleteNote = function (key, idx) {
       if (!DAY_NOTES[key]) return;
@@ -2440,14 +1943,8 @@ function getCalendarWalkHtml(
       if (DAY_NOTES[key].length === 0) delete DAY_NOTES[key];
       renderNotesFor(key);
       refreshHudForCurrentDay();
-      syncActivePageCrystals(true);
       broadcastNotes();
     };
-
-    function syncActivePageCrystals(animate) {
-      syncPageCrystals(currentPage, animate);
-      if (nextPage) syncPageCrystals(nextPage, animate);
-    }
 
     function broadcastNotes() {
       const sentences = serializeNotesToSentences(DAY_NOTES);
@@ -2470,7 +1967,6 @@ function getCalendarWalkHtml(
       noteInputEl.value = '';
       renderNotesFor(currentDateKey);
       refreshHudForCurrentDay();
-      syncActivePageCrystals(true);
       broadcastNotes();
     }
     addNoteBtnEl.addEventListener('click', addNoteForCurrentDay);
@@ -2485,7 +1981,6 @@ function getCalendarWalkHtml(
       weekNotesModalEl.classList.add('active');
     }
     function closeNotesPanel() { notesOpen = false; weekNotesModalEl.classList.remove('active'); }
-    hudNotesBtn.addEventListener('click', openNotesPanel);
     notesCloseBtnEl.addEventListener('click', closeNotesPanel);
     makePanelMoveableAndCollapsible(weekNotesModalEl, document.getElementById('notesCollapseBtn'));
 
@@ -2565,7 +2060,6 @@ function getCalendarWalkHtml(
       task.status = computeTaskStatus(task);
       renderTasksFor(key);
       broadcastTasks();
-      refreshStudyMarkers();
     };
 
     window.deleteTask = function (key, taskId) {
@@ -2574,7 +2068,7 @@ function getCalendarWalkHtml(
       renderTasksFor(key);
       refreshHudForCurrentDay();
       broadcastTasks();
-      refreshStudyMarkers();
+      refreshTaskTrails();
     };
 
     function addTaskForCurrentDay() {
@@ -2589,7 +2083,7 @@ function getCalendarWalkHtml(
       renderTasksFor(currentDateKey);
       refreshHudForCurrentDay();
       broadcastTasks();
-      refreshStudyMarkers();
+      refreshTaskTrails();
     }
     addTaskBtnEl.addEventListener('click', addTaskForCurrentDay);
     taskInputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') addTaskForCurrentDay(); });
@@ -2603,7 +2097,6 @@ function getCalendarWalkHtml(
       dayTasksModalEl.classList.add('active');
     }
     function closeTasksPanel() { tasksOpen = false; dayTasksModalEl.classList.remove('active'); }
-    hudTasksBtn.addEventListener('click', openTasksPanel);
     tasksCloseBtnEl.addEventListener('click', closeTasksPanel);
     makePanelMoveableAndCollapsible(dayTasksModalEl, document.getElementById('tasksCollapseBtn'));
 
@@ -2809,119 +2302,6 @@ function getCalendarWalkHtml(
     if (studyPlanBackFooterBtnEl) studyPlanBackFooterBtnEl.addEventListener('click', closeStudyPlan);
 
     // ------------------------------------------------------------------
-    // My City: the catalogue of banked buildings, the first concrete step
-    // toward a full Little Big City build-out. Grouped into one "street"
-    // per assignment, ordered chronologically by the day each building was
-    // earned, so a street reads left-to-right as a walkable timeline of
-    // that assignment's progress -- the capstone (final review/submit day)
-    // is marked distinctly at the end. Only banked buildings appear here;
-    // nothing shows up as missing/red for days not yet reached, which
-    // keeps the collection purely additive/positive rather than a tracker
-    // of what's overdue (that framing already lives on the calendar
-    // itself, where a locked grey building is neutral, not a red flag).
-    const cityLauncherBtnEl = document.getElementById('cityLauncherBtn');
-    const cityLauncherCountEl = document.getElementById('cityLauncherCount');
-    const myCityOverlayEl = document.getElementById('myCityOverlay');
-    const myCitySubtitleEl = document.getElementById('myCitySubtitle');
-    const myCityContentEl = document.getElementById('myCityContent');
-    const myCityBackBtnEl = document.getElementById('myCityBackBtn');
-    const BUILDING_ICONS = ['\u{1F3E0}', '\u{1F3E2}']; // one per STUDY_BUILDING_MODEL_URLS entry
-
-    function parseIsoKeyToDate(key) {
-      const parts = key.split('-').map(Number);
-      return new Date(parts[0], parts[1], parts[2]);
-    }
-    function formatShortDateFromIsoKey(key) {
-      const d = parseIsoKeyToDate(key);
-      return MONTH_NAMES[d.getMonth()].slice(0, 3) + ' ' + d.getDate();
-    }
-    function findTaskById(taskId) {
-      for (const dayKey of Object.keys(DAY_TASKS)) {
-        const found = (DAY_TASKS[dayKey] || []).find((t) => t.id === taskId);
-        if (found) return found;
-      }
-      return null;
-    }
-    function updateCityLauncherCount() {
-      if (cityLauncherCountEl) cityLauncherCountEl.textContent = String(loadBuildingReserve().length);
-    }
-
-    function renderMyCity() {
-      if (!myCityContentEl) return;
-      const reserve = loadBuildingReserve();
-      if (myCitySubtitleEl) myCitySubtitleEl.textContent = reserve.length + (reserve.length === 1 ? ' building banked' : ' buildings banked');
-      if (reserve.length === 0) {
-        myCityContentEl.innerHTML = '<div class="city-empty">No buildings banked yet. Check off a step on a scheduled study day to unlock its building on the calendar, then tap it to bank it here.</div>';
-        return;
-      }
-      const byTask = {};
-      reserve.forEach((b) => {
-        if (!byTask[b.taskId]) byTask[b.taskId] = { label: b.taskLabel, dueDateISO: b.taskDueDateISO, items: [] };
-        byTask[b.taskId].items.push(b);
-      });
-      const streetsHtml = Object.keys(byTask).map((taskId) => {
-        const group = byTask[taskId];
-        group.items.sort((a, c) => parseIsoKeyToDate(a.dateKey) - parseIsoKeyToDate(c.dateKey));
-        const liveTask = findTaskById(taskId);
-        const totalLabel = liveTask
-          ? group.items.length + ' of ' + buildStudyPlanNodes(liveTask).length + ' collected'
-          : group.items.length + ' collected';
-        const dueLabel = group.dueDateISO ? formatShortDate(group.dueDateISO) : '';
-        const cardsHtml = group.items.map((b) => {
-          const icon = BUILDING_ICONS[b.modelIndex] || BUILDING_ICONS[0];
-          return '<div class="city-building-card' + (b.isFinal ? ' is-capstone' : '') + '">' +
-            (b.isFinal ? '<span class="city-building-star">⭐</span>' : '') +
-            '<span class="city-building-icon">' + icon + '</span>' +
-            '<span class="city-building-date">' + formatShortDateFromIsoKey(b.dateKey) + '</span>' +
-          '</div>';
-        }).join('');
-        return '<div class="city-street">' +
-          '<div class="city-street-header">' +
-            '<span class="city-street-title">' + group.label.replace(/</g, '&lt;') + '</span>' +
-            '<span class="city-street-progress">' + totalLabel + (dueLabel ? ' &middot; due ' + dueLabel : '') + '</span>' +
-          '</div>' +
-          '<div class="city-street-row">' + cardsHtml + '</div>' +
-        '</div>';
-      }).join('');
-      myCityContentEl.innerHTML = streetsHtml;
-    }
-
-    if (cityLauncherBtnEl) cityLauncherBtnEl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      renderMyCity();
-      if (myCityOverlayEl) myCityOverlayEl.classList.add('active');
-    });
-    if (myCityBackBtnEl) myCityBackBtnEl.addEventListener('click', () => {
-      if (myCityOverlayEl) myCityOverlayEl.classList.remove('active');
-    });
-    updateCityLauncherCount();
-
-    // Crystal size/glow controls (persisted per-student)
-    (function initCrystalControls() {
-      const sizeSlider = document.getElementById('crystalSizeSlider');
-      const glowSlider = document.getElementById('crystalGlowSlider');
-      try {
-        const saved = JSON.parse(localStorage.getItem(CRYSTAL_SETTINGS_KEY) || '{}');
-        if (typeof saved.size === 'number') { crystalSizeMultiplier = saved.size; sizeSlider.value = String(saved.size); }
-        if (typeof saved.glow === 'number') { crystalGlowMultiplier = saved.glow; glowSlider.value = String(saved.glow); }
-      } catch (e) {}
-      function saveCrystalSettings() {
-        try { localStorage.setItem(CRYSTAL_SETTINGS_KEY, JSON.stringify({ size: crystalSizeMultiplier, glow: crystalGlowMultiplier })); } catch (e) {}
-      }
-      sizeSlider.addEventListener('input', () => {
-        crystalSizeMultiplier = parseFloat(sizeSlider.value);
-        rebuildPageCrystals(currentPage);
-        if (nextPage) rebuildPageCrystals(nextPage);
-        saveCrystalSettings();
-      });
-      glowSlider.addEventListener('input', () => {
-        crystalGlowMultiplier = parseFloat(glowSlider.value);
-        if (crystalMaterial) crystalMaterial.emissiveIntensity = ACTIVE_THEME.crystal.glowBase * crystalGlowMultiplier;
-        saveCrystalSettings();
-      });
-    })();
-
-    // ------------------------------------------------------------------
     // Month picker: one launcher button opens a separate full-window grid
     // (TikTok profile-grid styling) instead of an always-visible in-scene
     // rail. Picking a tile closes the grid and flips to that month in the
@@ -3000,6 +2380,7 @@ function getCalendarWalkHtml(
     if (monthLauncherBtnEl) {
       monthLauncherBtnEl.addEventListener('click', (e) => { e.stopPropagation(); openMonthGrid(); });
     }
+
     if (monthGridBackBtnEl) {
       monthGridBackBtnEl.addEventListener('click', (e) => { e.stopPropagation(); closeMonthGrid(); });
     }
@@ -3032,21 +2413,6 @@ function getCalendarWalkHtml(
       if (key === currentDateKey) return;
       currentDateKey = key;
       currentDate = date;
-      const isToday = isSameDate(date, TODAY);
-      const isPadding = date.getMonth() !== currentPage.month;
-      // Only show the event line when this day actually has one -- "No
-      // events scheduled for this day" on every empty tile was pure noise
-      // to filter out each time the panel is glanced at.
-      const eventText = SAMPLE_EVENTS[key] || '';
-      const label = \`\${WEEKDAYS[date.getDay()]}, \${MONTH_NAMES[date.getMonth()].slice(0, 3)} \${date.getDate()}, \${date.getFullYear()}\`;
-      if (dayValueEl) dayValueEl.textContent = label;
-      if (hudBadgeEl) {
-        hudBadgeEl.textContent = isToday ? 'Today' : (isPadding ? MONTH_NAMES[date.getMonth()].slice(0, 3) : \`Day \${date.getDate()}\`);
-        hudBadgeEl.className = 'hud-badge' + (isToday ? ' today' : '') + (isPadding ? ' pad' : '');
-      }
-      if (hudTaskEl) hudTaskEl.textContent = eventText;
-      if (hudTaskRowEl) hudTaskRowEl.style.display = eventText ? 'flex' : 'none';
-      refreshHudForCurrentDay();
       if (notesOpen) openNotesPanel();
       if (tasksOpen) openTasksPanel();
     }
@@ -3074,6 +2440,7 @@ function getCalendarWalkHtml(
     const FLIP_TRIGGER_SLACK = 3.5;
 
     function update(delta) {
+      pulseTaskTrails(elapsedTime);
       if (mixer) mixer.update(delta);
       if (hipsBone && hipsRestPosition) hipsBone.position.copy(hipsRestPosition);
 
@@ -3169,19 +2536,10 @@ function getCalendarWalkHtml(
       if (isCurrentlyMoving) {
         lastMovementTime = elapsedTime;
         if (!isMoving) { isMoving = true; if (footstepSound.buffer && !footstepSound.isPlaying) footstepSound.play(); }
-        if (elapsedTime - lastStepTime > FOOTPRINT_STEP_INTERVAL) {
-          lastStepTime = elapsedTime;
-          const bone = stepOnLeft ? leftFootBone : rightFootBone;
-          stepOnLeft = !stepOnLeft;
-          if (bone) { footWorldPos.setFromMatrixPosition(bone.matrixWorld); stampFootprint(footWorldPos.x, footWorldPos.z, elapsedTime); }
-          else stampFootprint(characterParent.position.x, characterParent.position.z, elapsedTime);
-        }
       } else if (elapsedTime - lastMovementTime > 0.3 && isMoving) {
         isMoving = false;
         if (footstepSound.isPlaying) footstepSound.stop();
       }
-      updateFootprints(elapsedTime);
-      updateCrystalGrowth(delta);
 
       // Smooth surface height stepping (walking on top of flat tiles & background)
       const targetSurfaceY = getSurfaceHeightAt(characterParent.position.x, characterParent.position.z);
@@ -3223,9 +2581,9 @@ interface CalendarWalkProps {
   initialTasks?: string;
   onTasksChange?: (tasksJson: string) => void;
   /** Which theme background is currently active -- picks the calendar's physical
-   * shell (plinth/card/ring colors, fonts, flip character) and the note-crystal
-   * look, so both match whatever the student already chose elsewhere rather than
-   * being a separate setting. Falls back to a neutral default look if omitted. */
+   * shell (plinth/card/ring colors, fonts, flip character) so it matches whatever
+   * the student already chose elsewhere rather than being a separate setting.
+   * Falls back to a neutral default look if omitted. */
   currentBgUrl?: string;
   /** Mirrors the app's global dark-mode toggle for the notes/HUD chrome. */
   isDarkMode?: boolean;

@@ -1,0 +1,11 @@
+[build]
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  command = "npm run dev -- --port 3010"
+  targetPort = 3010
+  port = 4300
+  publish = "dist"
+  functions = "netlify/functions"
+  framework = "vite"

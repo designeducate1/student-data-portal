@@ -9,9 +9,18 @@
 // lookup) -- this reads official college data live and read-only, per the
 // "display, don't duplicate" privacy principle, so it keeps talking to the
 // same backend the original project used.
+export interface ChatCard {
+  title: string;
+  url: string;
+  kind: 'youtube' | 'drive' | 'link';
+  embedUrl: string | null;
+  thumbnailUrl: string | null;
+}
+
 export interface ChatMessage {
   text: string;
   type: 'sent' | 'received';
+  cards?: ChatCard[];
 }
 
 export interface StudentData {
@@ -25,6 +34,11 @@ export interface SubStep {
   done: boolean;
 }
 
+export interface TaskWaypoint {
+  dateISO: string;
+  label: string;
+}
+
 export interface TaskEntry {
   id: string;
   dateISO: string;
@@ -33,6 +47,11 @@ export interface TaskEntry {
   estimatedMinutes: number;
   loggedMinutes: number;
   status: 'not_started' | 'in_progress' | 'done';
+  // Dates parsed out of a Classroom brief's own text (see
+  // extractDateWaypoints() in classroom-coursework.js) -- rendered as
+  // breadcrumb markers along the 3D deadline trail. Absent for
+  // locally-created tasks.
+  waypoints?: TaskWaypoint[];
 }
 
 export type BuildingSizeTier = 'small' | 'medium' | 'large';
