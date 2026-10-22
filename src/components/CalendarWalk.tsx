@@ -80,11 +80,11 @@ function getCalendarWalkHtml(
       --cal-plinth: #5b4636; --cal-card: #d9c9a3; --cal-card-today: #8a5cff; --cal-ring: #9a9a9a;
       --cal-accent: #8a5cff; --font-display: 'Press Start 2P', monospace; --font-body: 'VT323', monospace;
     }
-    html[data-theme="lotr"] {
+    html[data-theme="hillside"] {
       --cal-plinth: #4a4331; --cal-card: #f3ecd8; --cal-card-today: #cfd8ff; --cal-ring: #c8ccd4;
       --cal-accent: #5578b8; --font-display: 'Cinzel', serif; --font-body: 'EB Garamond', serif;
     }
-    html[data-theme="pooh"] {
+    html[data-theme="woodland"] {
       --cal-plinth: #c9a875; --cal-card: #fff6e6; --cal-card-today: #ffdca6; --cal-ring: #b98a4a;
       --cal-accent: #d68a1e; --font-display: 'Baloo 2', cursive; --font-body: 'Nunito', sans-serif;
     }
@@ -676,11 +676,17 @@ function getCalendarWalkHtml(
       return days;
     }
 
+    // The plinth's own color is only ever actually seen as the thin rim
+    // beyond the cards (which fully cover the rest of its top face) --
+    // now that the lake sits right up against that rim, these read as a
+    // damp riverbank ring, not just a seasonal accent. Deep, muddy tones
+    // instead of pale pastels so the water's white foam pattern actually
+    // shows up against them.
     function seasonTint(monthIndex) {
-      if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return 0xdCE8f5;
-      if (monthIndex >= 2 && monthIndex <= 4) return 0xe1f0e1;
-      if (monthIndex >= 5 && monthIndex <= 7) return 0xfaf0cf;
-      return 0xf7e3ce;
+      if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return 0x5f7a8c; // wet slate (winter)
+      if (monthIndex >= 2 && monthIndex <= 4) return 0x5f8a5f; // mossy bank (spring)
+      if (monthIndex >= 5 && monthIndex <= 7) return 0x9c8a4a; // sunbaked mud (summer)
+      return 0x8a5f3f; // wet clay (autumn)
     }
 
     // ------------------------------------------------------------------
@@ -688,8 +694,8 @@ function getCalendarWalkHtml(
     // colors, flip style) belongs to whichever world the student picked.
     // ------------------------------------------------------------------
     const MINECRAFT_BG_URL = '/backgrounds/minecraft-scene.png';
-    const LOTR_BG_URL = '/backgrounds/lotr-shire.png';
-    const EEYORE_BG_URL = '/backgrounds/eeyore-cover-concept.png';
+    const EYE_BG_URL = '/backgrounds/intro-eye.jpg';
+    const SCENE_BG_URL = '/backgrounds/intro-scene.jpg';
     const WOODED_BG_URL = '/backgrounds/wooded-cover-concept.png';
 
     const CALENDAR_THEMES = {
@@ -699,15 +705,25 @@ function getCalendarWalkHtml(
         flip: 'snap',
         accent: 0x8a5cff,
       },
-      lotr: {
-        key: 'lotr', label: 'Mithril Bloom',
+      hillside: {
+        key: 'hillside', label: 'Silver Bloom',
         plinth: 0x4a4331, card: 0xf3ecd8, cardToday: 0xcfd8ff, cardPad: 0xe1dabf, ring: 0xc8ccd4, ringMetal: 0.9, ringRough: 0.15,
         flip: 'elegant',
         accent: 0xcfd8ff,
       },
-      pooh: {
-        key: 'pooh', label: 'Honey Bloom',
-        plinth: 0xc9a875, card: 0xfff6e6, cardToday: 0xffdca6, cardPad: 0xe9d3a8, ring: 0xb98a4a, ringMetal: 0.2, ringRough: 0.6,
+      woodland: {
+        // Recolored for the woodland intro scene pairing -- a mossy
+        // forest-floor palette instead of the previous cream/honey tones,
+        // partly so the lake's white foam pattern actually reads against
+        // it (pale cream was close enough to white to wash the foam out).
+        key: 'woodland', label: 'Misty Woodland',
+        // Pre-darkened from the requested #499528 -- the flat top-facing
+        // plinth/island surfaces sit under a directional light at ~84%
+        // of full strength (close to head-on) plus 0.42 ambient, a
+        // combined gain of roughly x1.35 on this material, which was
+        // making the raw hex render noticeably lighter on screen than
+        // the swatch. This is a computed estimate, not pixel-verified.
+        plinth: 0x366e1e, card: 0x9cb87a, cardToday: 0xf0c060, cardPad: 0x7fa05f, ring: 0x6b4f30, ringMetal: 0.2, ringRough: 0.6,
         flip: 'bouncy',
         accent: 0xffb84d,
       },
@@ -721,8 +737,8 @@ function getCalendarWalkHtml(
 
     function pickThemeKey(bgUrl) {
       if (bgUrl === MINECRAFT_BG_URL) return 'minecraft';
-      if (bgUrl === LOTR_BG_URL) return 'lotr';
-      if (bgUrl === EEYORE_BG_URL || bgUrl === WOODED_BG_URL) return 'pooh';
+      if (bgUrl === EYE_BG_URL) return 'hillside';
+      if (bgUrl === SCENE_BG_URL || bgUrl === WOODED_BG_URL) return 'woodland';
       return 'default';
     }
     const ACTIVE_THEME_KEY = pickThemeKey(CURRENT_BG_URL);
@@ -967,6 +983,31 @@ function getCalendarWalkHtml(
     }
 
     // ------------------------------------------------------------------
+    // TEMPORARY TEST INJECTION -- there is no real Classroom-to-DAY_TASKS
+    // data pipeline wired up yet (confirmed separately), so this is the
+    // only way to actually see the new waypoint pin drop-in animation
+    // right now. Delete this whole block once confirmed working; it has
+    // nothing to do with the real feature.
+    // Note: this task also has a dueDateISO, which means the PRE-EXISTING
+    // deadline trail (buildTaskTrails()'s own tube-drawing code, not
+    // touched by the pin work) will also glow for it automatically --
+    // that's just how the unmodified trail system already behaves for
+    // any task with a due date, not something newly added here.
+    (function injectTestWaypointTask() {
+      const padISO = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      const taskDate = addDays(TODAY, 1);
+      const dueDate = addDays(TODAY, 6);
+      const testTask = createTask(isoKey(taskDate), 'TEST: sample Classroom brief', padISO(dueDate));
+      testTask.waypoints = [
+        { dateISO: padISO(addDays(TODAY, 2)), label: 'test waypoint 1' },
+        { dateISO: padISO(addDays(TODAY, 4)), label: 'test waypoint 2' },
+      ];
+      const key = isoKey(taskDate);
+      if (!DAY_TASKS[key]) DAY_TASKS[key] = [];
+      DAY_TASKS[key].push(testTask);
+    })();
+
+    // ------------------------------------------------------------------
     // Renderer / scene / camera / lighting
     // ------------------------------------------------------------------
     const canvas = document.getElementById('scene-canvas');
@@ -982,7 +1023,10 @@ function getCalendarWalkHtml(
     const scene = new THREE.Scene();
     const WORLD_COLOR = IS_DARK_MODE ? '#12171a' : '#dfe4ea';
     scene.background = new THREE.Color(WORLD_COLOR);
-    scene.fog = new THREE.Fog(WORLD_COLOR, 140, 260);
+    // No fog at all for the woodland theme -- even pushed out
+    // further, it was still washing the forest into a pale haze. Other
+    // themes keep the original distance fog.
+    if (ACTIVE_THEME_KEY !== 'woodland') scene.fog = new THREE.Fog(WORLD_COLOR, 140, 260);
 
     // Widened FOV and a further-back/higher follow offset than before (was
     // 58deg / (0,34,52)) -- the old framing felt tightly zoomed in on the
@@ -995,20 +1039,50 @@ function getCalendarWalkHtml(
     camera.position.copy(cameraOffset);
     camera.lookAt(0, 6, 40);
 
+    // Zoom in/out (scroll wheel, or pinch on touch) -- scales the camera's
+    // distance from the character within clamped bounds. Deliberately
+    // just a distance scale, not a free-look orbit: walking still steers
+    // where the camera faces, this only pulls it closer or further back.
+    let cameraZoom = 1;
+    const ZOOM_MIN = 0.55, ZOOM_MAX = 1.8;
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      cameraZoom = THREE.MathUtils.clamp(cameraZoom + e.deltaY * 0.0012, ZOOM_MIN, ZOOM_MAX);
+    }, { passive: false });
+    let pinchStartDist = null, pinchStartZoom = 1;
+    canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        pinchStartZoom = cameraZoom;
+      }
+    }, { passive: true });
+    canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && pinchStartDist) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        cameraZoom = THREE.MathUtils.clamp(pinchStartZoom * (pinchStartDist / dist), ZOOM_MIN, ZOOM_MAX);
+      }
+    }, { passive: true });
+    canvas.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) pinchStartDist = null;
+    }, { passive: true });
+
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 2.1);
+    // The woodland theme runs noticeably dimmer than other themes -- a
+    // moodier, more foreboding wood rather than bright daylight.
+    const isWoodlandLighting = ACTIVE_THEME_KEY === 'woodland';
+    const dirLight = new THREE.DirectionalLight(isWoodlandLighting ? 0xdce8e0 : 0xffffff, isWoodlandLighting ? 1.1 : 2.1);
     dirLight.position.set(24, 46, 18);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.set(1024, 1024);
     dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100;
     dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
     scene.add(dirLight);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    scene.add(new THREE.AmbientLight(0xffffff, isWoodlandLighting ? 0.42 : 0.75));
 
     const characterParent = new THREE.Group();
     scene.add(characterParent);
@@ -1049,7 +1123,12 @@ function getCalendarWalkHtml(
     let PLINTH_TOP_Y = 0;
     function getPlinthGeometry() {
       if (plinthGeoCache) return plinthGeoCache;
-      const margin = 7;
+      // Was 7 -- that's how wide the dry, unsubmerged rim reads between
+      // the tiles and the lake, regardless of how close the water's own
+      // waterline gets. Narrower margin, narrower rim, closer-reading
+      // shoreline. Keep in sync with getSurfaceHeightAt()'s own margin
+      // below, which defines the same footprint for walking.
+      const margin = 3;
       const w = GRID_W + margin * 2;
       const d = GRID_D + margin * 2;
       const shape = roundedRectShape(w, d, 6);
@@ -1093,7 +1172,7 @@ function getCalendarWalkHtml(
           }
         }
       }
-      const margin = 7;
+      const margin = 3; // must match getPlinthGeometry()'s own margin
       const plinthMinX = -GRID_W / 2 - margin;
       const plinthMaxX = GRID_W / 2 + margin;
       const plinthMinZ = -CELL / 2 - margin;
@@ -1299,6 +1378,672 @@ function getCalendarWalkHtml(
     }
 
     // ------------------------------------------------------------------
+    // Lake -- a stylized, animated water plane surrounding the calendar
+    // island. Adapted from thaslle/stylized-water (MIT): a flat plane
+    // whose vertex shader bobs it with one sine wave, and whose fragment
+    // shader layers two animated simplex-noise fields through smoothstep
+    // thresholds to fake toon-style wave lines and foam, plus a radial
+    // vignette fading toward a paler "far" color at the shoreline. No
+    // textures, no reflection/refraction render pass -- cheap enough for
+    // mobile, same reasoning as the crystal materials' pre-baked env map.
+    // Built once and added directly to the scene (not per-page): the
+    // pages flip above it like a desk calendar, the lake is the still
+    // ground underneath and doesn't move with them.
+    // ------------------------------------------------------------------
+    const WATER_VERTEX_SHADER = \`
+      varying vec2 vLocalPos;
+      uniform float uTime;
+      uniform float uWaveSpeed;
+      uniform float uWaveAmplitude;
+      uniform float uIslandHalfW;
+      uniform float uIslandHalfD;
+      uniform float uIslandWobble;
+      uniform float uTideSpeed;
+      uniform float uShoreSurge;
+
+      // Superellipse core (rounded corners, see the JS islandRadiusAt
+      // for the full reasoning) plus one gentle wobble harmonic -- must
+      // stay byte-for-byte in sync with the JS version and the other
+      // copy of this function below, or the water's shoreline silently
+      // drifts from the real island edge again.
+      float islandRadiusAt(float theta, float halfW, float halfD) {
+        float c = cos(theta), s = sin(theta);
+        float n = 2.5;
+        float toRounded = 1.0 / pow(pow(abs(c) / halfW, n) + pow(abs(s) / halfD, n), 1.0 / n);
+        float wobble = uIslandWobble * 0.6 * (0.5 + 0.5 * cos(3.0 * theta + 0.6));
+        return toRounded + wobble;
+      }
+
+      void main() {
+        // Local (pre-rotation) XY doubles as the water's own flat-plane
+        // world offset from the island's center, in real world units --
+        // used below so the detail/fade bands stay anchored to the actual
+        // shoreline no matter how large this plane is, rather than to an
+        // arbitrary 0..1 UV span across the whole thing.
+        vLocalPos = position.xy;
+        float sineOffset = sin(uTime * uWaveSpeed) * uWaveAmplitude;
+
+        // A real height surge right at the shore, on top of the whole
+        // plane's gentle bob -- without this the water's "rise and fall"
+        // was only ever a color/pattern effect (the shoreT blend in the
+        // fragment shader), never an actual change in the water's own
+        // surface height, so it could never visibly wash up over the
+        // island's rim the way a real tide does. Peaks at the island's
+        // true (wobbly) edge and fades out over the next ~8 units into
+        // the lake (was 18 -- on this small an island that was nearly as
+        // wide as the whole grass margin, which read as flooding rather
+        // than a thin lapping edge), oscillating so it periodically rises
+        // high enough to cover the rim (which sits only +0.06 above the
+        // still waterline) and recedes again.
+        float theta = atan(position.y, position.x);
+        float islandR = islandRadiusAt(theta, uIslandHalfW, uIslandHalfD);
+        float distPastEdge = length(position.xy) - islandR;
+        // abs(), not max(distPastEdge, 0.0) -- the old clamp collapsed
+        // every point UNDER the island (distPastEdge negative, which is
+        // the entire interior, not just the rim) to shoreProximity 1.0,
+        // so the full surge applied across the whole island, not a thin
+        // band at the true edge -- periodically flooding most of the
+        // island's surface since its grass top sits only +0.35 above
+        // resting water level. abs() confines the surge to a band
+        // straddling BOTH sides of the real edge.
+        float shoreProximity = 1.0 - smoothstep(0.0, 8.0, abs(distPastEdge));
+        float surge = shoreProximity * uShoreSurge * (0.5 + 0.5 * sin(uTime * uTideSpeed));
+
+        vec3 modifiedPosition = position;
+        modifiedPosition.z += sineOffset + surge;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(modifiedPosition, 1.0);
+      }
+    \`;
+    const WATER_FRAGMENT_SHADER = \`
+      varying vec2 vLocalPos;
+      uniform float uTime;
+      uniform vec3 uColorNear;
+      uniform vec3 uColorFar;
+      uniform float uRippleScale;
+      uniform float uNearRadius;
+      uniform float uFarRadius;
+      uniform float uTideSpeed;
+      uniform float uTideRange;
+      uniform float uIslandHalfW;
+      uniform float uIslandHalfD;
+      uniform float uIslandWobble;
+
+      // Mirrors the JS islandRadiusAt() exactly (uIslandWobble is the
+      // same ISLAND_WOBBLE value, passed in rather than duplicated as a
+      // literal, so the two can never silently drift out of sync) so the
+      // shore the water laps against is the island's true, irregular
+      // edge at every angle, not a circle approximating it -- that
+      // mismatch was both leaving gaps where the lapping never reached
+      // the island's bulges, and overlapping into the meadow elsewhere
+      // (which is what the z-fighting "streaking" actually was).
+      // Superellipse core (rounded corners, see the JS islandRadiusAt
+      // for the full reasoning) plus one gentle wobble harmonic -- must
+      // stay byte-for-byte in sync with the JS version and the other
+      // copy of this function below, or the water's shoreline silently
+      // drifts from the real island edge again.
+      float islandRadiusAt(float theta, float halfW, float halfD) {
+        float c = cos(theta), s = sin(theta);
+        float n = 2.5;
+        float toRounded = 1.0 / pow(pow(abs(c) / halfW, n) + pow(abs(s) / halfD, n), 1.0 / n);
+        float wobble = uIslandWobble * 0.6 * (0.5 + 0.5 * cos(3.0 * theta + 0.6));
+        return toRounded + wobble;
+      }
+
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+        vec2 i = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+        m = m * m; m = m * m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+        vec3 g;
+        g.x = a0.x * x0.x + h.x * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+
+      void main() {
+        vec3 finalColor = uColorNear;
+        vec2 p = vLocalPos * uRippleScale;
+
+        float noiseBase = snoise(p * 2.8 + sin(uTime * 0.35));
+        noiseBase = noiseBase * 0.5 + 0.5;
+        vec3 foam = smoothstep(0.08, 0.001, vec3(noiseBase));
+        foam = step(0.5, foam);
+
+        float noiseWaves = snoise(p + sin(uTime * -0.25));
+        noiseWaves = noiseWaves * 0.5 + 0.5;
+        vec3 colorWaves = vec3(noiseWaves);
+
+        float threshold = 0.6 + 0.01 * sin(uTime * 0.8);
+        vec3 waveEffect = 1.0 - (smoothstep(threshold + 0.03, threshold + 0.032, colorWaves) +
+                                  smoothstep(threshold, threshold - 0.01, colorWaves));
+        waveEffect = step(0.5, waveEffect);
+
+        vec3 combinedEffect = min(waveEffect + foam, 1.0);
+
+        // Detail near the shore, smoothing out toward a calm, pale open
+        // stretch further out -- measured as distance PAST the island's
+        // own true (wobbly) edge at this exact angle, not a plain radius
+        // from center, so it correctly hugs every bulge and cove.
+        // uTidePulse rocks that boundary in and out over time, so the
+        // detailed/foamy band visibly ebbs and flows against the real
+        // island edge rather than just sitting there while its texture
+        // drifts.
+        float theta = atan(vLocalPos.y, vLocalPos.x);
+        float islandR = islandRadiusAt(theta, uIslandHalfW, uIslandHalfD);
+        float dist = length(vLocalPos) - islandR;
+        float tidePulse = sin(uTime * uTideSpeed) * uTideRange;
+        float shoreT = smoothstep(uNearRadius + tidePulse, uFarRadius + tidePulse, dist);
+        // combinedEffect/foam are already clean 0-or-1 values (every step
+        // above them was a binary step/smoothstep-then-step). Blending
+        // them down toward 0.0 by shoreT (a previous version) produced
+        // in-between, muddy values right in the near-shore transition --
+        // exactly the "mix of colours" instead of a clean white foam
+        // line. Left as pure binary and only the base water color (not
+        // the foam pattern itself) varies between the near and far tint.
+        vec3 baseEffect = vec3(shoreT);
+        vec3 baseColor = mix(finalColor, uColorFar, baseEffect);
+
+        finalColor = (1.0 - combinedEffect) * baseColor + combinedEffect;
+
+        vec3 alpha = mix(vec3(0.35), vec3(1.0), foam);
+        alpha = mix(alpha, vec3(1.0), shoreT * 0.5 + 0.4);
+
+        // Foam edge line -- replaces the old separate white rim mesh,
+        // which was a static approximation of the island's edge (72
+        // sampled points, built once) animated afterward with a
+        // hand-tuned formula that had to independently guess at matching
+        // this shader's own tide math. Any drift between those two
+        // separate approximations is exactly what read as "not attached
+        // to the actual flowing water". This instead reuses dist (the
+        // same true-edge distance already driving shoreT above) and
+        // crawls the line onto the island as the tide rises, using the
+        // same uTideSpeed phase as the real shore surge -- it cannot
+        // visually detach because it's computed from the identical field
+        // that positions the real water, not a second approximation of it.
+        float edgeTideT = 0.5 + 0.5 * sin(uTime * uTideSpeed);
+        float edgeDist = dist + edgeTideT * 6.0;
+        float edgeLine = 1.0 - smoothstep(1.2, 2.8, abs(edgeDist));
+        finalColor = mix(finalColor, vec3(1.0), edgeLine);
+        alpha = mix(alpha, vec3(1.0), edgeLine);
+
+        gl_FragColor = vec4(finalColor, alpha.r);
+      }
+    \`;
+
+    // ------------------------------------------------------------------
+    // Shore rim -- Woodland theme only. The reed/bank/
+    // lily-pad system this replaced leaned on the water shader's own
+    // noise-based color fade to *imply* a shoreline, which turned out
+    // fragile (washed out, hard to read). This is a small, deliberate,
+    // always-visible bright ring sitting right at the island's edge --
+    // a guaranteed "this is where the water meets the land" cue that
+    // doesn't depend on shader tuning, plus a few simple rocks for a bit
+    // of the island's character. Cheap: two static meshes.
+    // ------------------------------------------------------------------
+    // How far the grassy island extends beyond the calendar's own plinth,
+    // at minimum, on every side -- the actual edge then wobbles out
+    // further than this by up to ISLAND_WOBBLE more (see islandRadiusAt),
+    // for an irregular, hand-drawn-looking coastline instead of a plain
+    // rounded rectangle, the same way the reference island isn't a clean
+    // circle. The wobble only ever adds area, never subtracts, so the
+    // calendar grid is always safely inside it at every angle.
+    // Tightened (was 22) so the water's edge sits noticeably closer to
+    // the calendar itself -- still enough room for the shore rim (3.5
+    // thick) plus the shore-surge band (8 units, see WATER_VERTEX_SHADER)
+    // to wash in from the true edge without reaching the calendar grid.
+    const ISLAND_BASE_MARGIN = 12;
+    const ISLAND_WOBBLE = 15;
+    // Width of the lake ring between the island's edge and the flat
+    // grass skirt. Shared by the water plane and the terrain shading so
+    // they agree on where the lake actually ends. Widened twice now (was
+    // 42, then 80) so the animated water pushes almost all the way back
+    // to the painted backdrop -- a thin rising bank, not a wide flat
+    // margin of static grass, between the real water and the image.
+    const LAKE_WIDTH = 130;
+
+    // Distance from the island's center to its own (gently rounded) edge
+    // at a given angle. The core shape is a superellipse ("squircle")
+    // rather than a plain rectangle -- exponent 2.5 sits between a full
+    // ellipse (2, no corner feel at all) and a sharp rectangle (infinity),
+    // which smoothly rounds the corners while still safely containing
+    // the calendar's own rounded-rect footprint (plus ISLAND_BASE_MARGIN)
+    // at every angle: a superellipse of any exponent >= 2 only ever
+    // bulges outward from that rectangle, touching it exactly at the
+    // four axis-aligned points and never dipping inside it elsewhere.
+    // A single gentle wobble harmonic (was two, amplitude also reduced)
+    // keeps a touch of hand-drawn irregularity without reading as a
+    // jagged, busy coastline -- a calmer silhouette better suited to the
+    // the woodland theme's gentle, low-sensory-intensity feel.
+    function islandRadiusAt(theta, halfW, halfD) {
+      const c = Math.cos(theta), s = Math.sin(theta);
+      const n = 2.5;
+      const toRounded = 1 / Math.pow(Math.pow(Math.abs(c) / halfW, n) + Math.pow(Math.abs(s) / halfD, n), 1 / n);
+      const wobble = ISLAND_WOBBLE * 0.6 * (0.5 + 0.5 * Math.cos(3 * theta + 0.6));
+      return toRounded + wobble;
+    }
+
+    // A 2D outline tracing islandRadiusAt() all the way around -- used
+    // for both the island base's own shape and the shore rim's inner
+    // edge, so they always match exactly.
+    function buildIslandOutline(halfW, halfD, extraRadius) {
+      const shape = new THREE.Shape();
+      const steps = 72;
+      for (let i = 0; i <= steps; i++) {
+        const theta = (i / steps) * Math.PI * 2;
+        const r = islandRadiusAt(theta, halfW, halfD) + (extraRadius || 0);
+        const x = Math.cos(theta) * r, z = Math.sin(theta) * r;
+        if (i === 0) shape.moveTo(x, z); else shape.lineTo(x, z);
+      }
+      return shape;
+    }
+
+    // A low, flat grass base wider than the calendar plinth on every
+    // side -- sits a little below the plinth's own top, so the plinth
+    // visibly rests on top of it rather than the two blending into one
+    // shape. Same color as the calendar's own tiles/plinth so the whole
+    // island reads as one continuous piece of ground.
+    function buildIslandBase(centerZ, plinthColor, waterY, halfW, halfD) {
+      const shape = buildIslandOutline(halfW, halfD, 0);
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: 1.6, bevelEnabled: true, bevelThickness: 0.3, bevelSize: 0.3, bevelSegments: 3, curveSegments: 1 });
+      geo.rotateX(-Math.PI / 2);
+      geo.translate(0, 0, centerZ);
+      geo.computeBoundingBox();
+      const topY = geo.boundingBox.max.y; // the geometry's own baked-in top height, before any mesh offset
+      const mat = new THREE.MeshStandardMaterial({ color: plinthColor, roughness: 0.92, metalness: 0.02 });
+      const mesh = new THREE.Mesh(geo, mat);
+      // Anchored to the water level, not PLINTH_TOP_Y with a guessed
+      // offset -- an earlier version landed the island's top *below* the
+      // water surface (submerged, so invisible). Lowered from +1.0 to
+      // +0.35 -- the gap was too big for the shore surge to ever visibly
+      // reach the island's own grass, only the thin rim above it.
+      mesh.position.y = waterY + 0.35 - topY;
+      mesh.receiveShadow = true;
+      mesh.castShadow = true;
+      scene.add(mesh);
+    }
+
+    // A static, vertex-colored ring sitting just outside the island's
+    // true edge, fading from the island's own grass tone to a sandy
+    // beige right at the water -- a believable embankment instead of
+    // grass cutting straight to water. Purely a color/geometry addition:
+    // no new uniforms, no render-loop hookup, doesn't touch the water
+    // shaders or their timing at all. Sloped slightly down toward the
+    // water so it reads as a real bank, not a flat painted stripe.
+    function buildSandyEmbankment(centerZ, waterY, halfW, halfD) {
+      const bandWidth = 6;
+      const shape = buildIslandOutline(halfW, halfD, bandWidth);
+      shape.holes.push(buildIslandOutline(halfW, halfD, 0));
+      // ShapeGeometry (flat), not ExtrudeGeometry -- height is overridden
+      // per-vertex below for the slope anyway, so there's no use for an
+      // extrusion's top/bottom/side-wall vertices here, just one clean
+      // vertex per outline point.
+      const geo = new THREE.ShapeGeometry(shape, 1);
+      geo.rotateX(-Math.PI / 2);
+
+      const pos = geo.attributes.position;
+      const count = pos.count;
+      const colors = new Float32Array(count * 3);
+      const cGrassEdge = new THREE.Color(0x366e1e); // matches the island base's own (compensated) grass color
+      const cSand = new THREE.Color(0xcdab6e);
+      const tmp = new THREE.Color();
+
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i);
+        const zLocal = pos.getZ(i); // centerZ not yet translated in -- local to island center, same as x
+        const theta = Math.atan2(zLocal, x);
+        const r = Math.sqrt(x * x + zLocal * zLocal);
+        const d = r - islandRadiusAt(theta, halfW, halfD);
+        const t = THREE.MathUtils.clamp(d / bandWidth, 0, 1);
+        tmp.copy(cGrassEdge).lerp(cSand, t);
+        colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+        // Slight downward slope from near the island's grass height
+        // toward the water -- a believable bank rather than a flat shelf.
+        pos.setY(i, waterY + 0.32 - 0.24 * t);
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+      geo.translate(0, 0, centerZ);
+
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0.01 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+    }
+
+    function buildShoreRocks(centerZ, waterY, halfW, halfD) {
+      // The white "foam edge" ring used to be a separate static mesh
+      // here, approximating the island's outline at build time and then
+      // animated afterward with a hand-tuned formula that had to
+      // independently guess at matching the water shader's own tide
+      // math -- any drift between those two separate approximations was
+      // exactly what read as "not attached to the actual flowing water".
+      // That line is now rendered inside WATER_FRAGMENT_SHADER itself
+      // (the edgeLine term), computed from the identical dist/tide field
+      // that positions the real water, so it can't detach from it. Only
+      // the rocks remain here.
+      const rockMat = new THREE.MeshStandardMaterial({ color: 0xb9c2c4, roughness: 0.9, metalness: 0.03 });
+      // Several scattered clusters of boulders poking out of the lake,
+      // spread around the island at varied angles and distances (some
+      // close to shore, some out in open water) rather than the single
+      // fixed cluster this used to be -- reads as a natural, rocky lake
+      // bed rather than one deliberate landscaping feature.
+      const clusterAngles = [0.78 * Math.PI, 0.15 * Math.PI, 1.35 * Math.PI, 1.85 * Math.PI, 1.05 * Math.PI];
+      clusterAngles.forEach((angle, ci) => {
+        // Alternates near-shore and further-out distances past the
+        // island's true edge so clusters don't all line up in one ring.
+        const outReach = 6 + (ci % 2 === 0 ? 0 : 22) + Math.random() * 10;
+        const baseR = islandRadiusAt(angle, halfW, halfD) + outReach;
+        const baseX = Math.cos(angle) * baseR, baseZ = centerZ + Math.sin(angle) * baseR;
+        const rockCount = 2 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < rockCount; i++) {
+          const r = 1.6 + Math.random() * 1.8;
+          const dx = (Math.random() - 0.5) * 7;
+          const dz = (Math.random() - 0.5) * 7;
+          const geo = new THREE.IcosahedronGeometry(r, 0);
+          const rock = new THREE.Mesh(geo, rockMat);
+          rock.position.set(baseX + dx, waterY + r * 0.55, baseZ + dz);
+          rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+          rock.scale.set(1, 0.75 + Math.random() * 0.2, 1);
+          rock.castShadow = true;
+          rock.receiveShadow = true;
+          scene.add(rock);
+        }
+      });
+    }
+
+    // Simple, cheap low-poly trees (cone + cylinder trunk) forming a
+    // ring just beyond the meadow -- not the source scene's full
+    // hand-placed forest, but close and dense enough to actually read as
+    // "surrounded by woods" from the walking camera, which a sparse ring
+    // scattered hundreds of units out (an earlier version) never did.
+    // ------------------------------------------------------------------
+    // Surrounding terrain -- Woodland theme only. Just
+    // the lake basin plus a short flat grass skirt: the avatar never
+    // leaves the island, so the old procedural meadow/forest-ridge/600
+    // trees it never got near are now a single painted panorama
+    // (buildPanoramaBackdrop, below) instead of real geometry. The lake
+    // basin itself stays real 3D -- the water shader's shoreline/surge/
+    // z-fighting fixes all depend on it.
+    // ------------------------------------------------------------------
+    function buildSurroundingTerrain(centerZ, waterY, islandHalfW, islandHalfD) {
+      const maxWobble = ISLAND_WOBBLE * 0.6; // headroom for the wobble's own max reach (single gentle harmonic now, see islandRadiusAt)
+      // How far past the (now much wider) lake the grass skirt reaches
+      // before the painted backdrop takes over -- just enough distance
+      // to rise as a real embankment (below) and hide the seam behind
+      // the backdrop cylinder's wall, not a wide dead zone of flat grass
+      // between the animated water and the image.
+      const skirtWidth = 16;
+      const half = islandHalfW + maxWobble + LAKE_WIDTH + skirtWidth;
+      const segments = 110;
+      const geo = new THREE.PlaneGeometry(half * 2, half * 2, segments, segments);
+      geo.rotateX(-Math.PI / 2);
+
+      const pos = geo.attributes.position;
+      const count = pos.count;
+      const colors = new Float32Array(count * 3);
+      const cUnderwater = new THREE.Color(0x173d2a);
+      // Matched to the panorama backdrop's own foreground grass tone, so
+      // the real geometry hands off to the painted image without a
+      // visible color seam.
+      const cSkirt = new THREE.Color(0x6f9c57);
+      const tmp = new THREE.Color();
+
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i);
+        // geo.translate(0, 0, centerZ) below hasn't run yet at this point
+        // in the loop, so pos.getZ(i) is still geometry-local (centered
+        // on the island already, same as x) -- no centerZ offset needed.
+        const zLocal = pos.getZ(i);
+        const theta = Math.atan2(zLocal, x);
+        const r = Math.sqrt(x * x + zLocal * zLocal);
+        // Same wobbly boundary as the island base/shore rim -- d is
+        // "distance past the island's own irregular edge", not a plain
+        // rectangle test, so the lake band actually hugs the coastline's
+        // bulges and coves instead of a straight edge.
+        const d = r - islandRadiusAt(theta, islandHalfW, islandHalfD);
+
+        let y = waterY;
+        if (d < 0) {
+          // Under the island base -- hidden, value is irrelevant.
+          y = waterY - 1;
+          tmp.copy(cUnderwater);
+        } else if (d < LAKE_WIDTH) {
+          // Lake: dips down right at the shore, rises back up to meet
+          // the grass skirt at the lake's outer edge. The -0.2 constant
+          // keeps this permanently below the flat water plane even at
+          // the two ends of the sine dip (t=0 and t=1, where sin()=0) --
+          // without it the lakebed exactly touched the water plane's own
+          // height right at those seams, and two coincident surfaces at
+          // the same depth is a textbook z-fighting setup -- it's what
+          // was actually producing that flickering, wrong-color streak.
+          const t = d / LAKE_WIDTH;
+          y = waterY - 0.2 - 2.6 * Math.sin(t * Math.PI);
+          tmp.copy(cUnderwater);
+        } else {
+          // Rising embankment out to the backdrop -- a real grassy bank
+          // climbing up from the water's edge (was a near-flat 0.15-unit
+          // shelf, which read as an abrupt, man-made cutoff rather than
+          // land rising naturally out of the lake into the painted hills).
+          const t = Math.min(1, (d - LAKE_WIDTH) / skirtWidth);
+          y = waterY + 0.85 + 3.5 * Math.sin(t * (Math.PI / 2));
+          tmp.copy(cSkirt);
+        }
+
+        pos.setY(i, y);
+        colors[i * 3] = tmp.r; colors[i * 3 + 1] = tmp.g; colors[i * 3 + 2] = tmp.b;
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+      geo.translate(0, 0, centerZ);
+
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0.03 });
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uTime = waterMaterial.uniforms.uTime;
+        shader.uniforms.uWaterLevel = { value: waterY };
+        shader.uniforms.uWaveSpeed = waterMaterial.uniforms.uWaveSpeed;
+        shader.uniforms.uWaveAmplitude = waterMaterial.uniforms.uWaveAmplitude;
+        shader.uniforms.uFoamDepth = { value: 0.18 };
+        // Anchored to begin_vertex (defines the transformed position var,
+        // unconditionally present in every material) rather than worldpos_vertex, which
+        // is only compiled in when fog/envmap are in play -- this mesh
+        // uses neither, so that chunk wouldn't actually be present and
+        // the injection would silently do nothing.
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\\nvarying vec3 vTerrainWorldPos;')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\\nvTerrainWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', \`#include <common>
+            varying vec3 vTerrainWorldPos;
+            uniform float uTime, uWaterLevel, uWaveSpeed, uWaveAmplitude, uFoamDepth;
+          \`)
+          .replace('#include <color_fragment>', \`#include <color_fragment>
+            float wetFactor = smoothstep(uWaterLevel + 0.4, uWaterLevel, vTerrainWorldPos.y);
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.75, wetFactor * 0.5);
+            float sineOffset = sin(uTime * uWaveSpeed) * uWaveAmplitude;
+            float currentWaterHeight = uWaterLevel + sineOffset;
+            float stripe = smoothstep(currentWaterHeight + 0.03, currentWaterHeight - 0.03, vTerrainWorldPos.y)
+                         - smoothstep(currentWaterHeight + uFoamDepth + 0.03, currentWaterHeight + uFoamDepth - 0.03, vTerrainWorldPos.y);
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0), stripe);
+          \`);
+      };
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.receiveShadow = true;
+      mesh.position.y = 0;
+      scene.add(mesh);
+
+      return half;
+    }
+
+    // ------------------------------------------------------------------
+    // Panorama backdrop -- Woodland theme only. A single
+    // painted watercolour landscape (public/backgrounds/woodland-panorama.jpg)
+    // wrapped around a large open cylinder standing just past the grass
+    // skirt, replacing the old procedural meadow/forest/trees entirely --
+    // the avatar never leaves the island, so this never needed to be
+    // real 3D, just scenery that reads correctly as the camera turns to
+    // follow it. BackSide so it renders from inside the cylinder;
+    // repeated with mirrored wrapping (rather than stretched once across
+    // the full 360 degrees) since one copy of a landscape photo spread
+    // that thin would smear into an unreadable band, and mirroring keeps
+    // each repeat's seam matched in colour rather than a hard cut.
+    // ------------------------------------------------------------------
+    function buildPanoramaBackdrop(centerZ, waterY, radius) {
+      const height = 170;
+      const bottomY = waterY - 6;
+
+      const texture = new THREE.TextureLoader().load('/backgrounds/woodland-panorama.jpg');
+      texture.encoding = THREE.sRGBEncoding;
+      texture.wrapS = THREE.MirroredRepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.repeat.set(5, 1);
+
+      const wallGeo = new THREE.CylinderGeometry(radius, radius, height, 64, 1, true);
+      const wallMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+      const wall = new THREE.Mesh(wallGeo, wallMat);
+      wall.position.set(0, bottomY + height / 2, centerZ);
+      scene.add(wall);
+
+      // Caps the cylinder's open top with the painting's own pale sky
+      // tone, so the elevated chase camera never catches a void gap
+      // above the backdrop when looking down over its rim.
+      const skyGeo = new THREE.CircleGeometry(radius * 1.3, 48);
+      const skyMat = new THREE.MeshBasicMaterial({ color: 0xe9eee0, side: THREE.DoubleSide });
+      const sky = new THREE.Mesh(skyGeo, skyMat);
+      sky.rotation.x = Math.PI / 2;
+      sky.position.set(0, bottomY + height - 1, centerZ);
+      scene.add(sky);
+    }
+
+    let waterMaterial = null;
+    let waterBaseY = 0;
+    function buildLake() {
+      const isWoodland = ACTIVE_THEME_KEY === 'woodland';
+      // The island base's own center-to-corner distance (not just the
+      // plinth's) now that the island is deliberately bigger than the
+      // calendar, so the ripple detail -- and the shore rim, and the
+      // terrain's lake dip -- all start right at the island's real edge
+      // rather than the plinth's. Padded by the wobble's own max reach
+      // so the water's near/far split (radial, angle-blind) never starts
+      // inside one of the island's irregular bulges.
+      const islandHalfW = isWoodland ? GRID_W / 2 + ISLAND_BASE_MARGIN : GRID_W / 2 + 3;
+      const islandHalfD = isWoodland ? GRID_D / 2 + ISLAND_BASE_MARGIN : GRID_D / 2 + 3;
+      const islandWobble = isWoodland ? ISLAND_WOBBLE : 0;
+      const islandMaxRadius = Math.sqrt(islandHalfW ** 2 + islandHalfD ** 2) + islandWobble * 0.6;
+      // uNearRadius/uFarRadius now mean "distance PAST the island's true
+      // (per-angle, wobbly) edge" -- the shader itself computes that true
+      // edge at every pixel's own angle (islandRadiusAt), rather than
+      // this being a plain radius from center. That per-angle awareness
+      // is what makes the lapping actually reach the island's bulges
+      // (a flat circular radius undershot them) and stops the water
+      // plane from overlapping into the meadow past narrower points
+      // (which was the real source of the z-fighting streak).
+      const nearRadius = -2;
+      // Was LAKE_WIDTH-6 (~36 units) -- much wider than the vertex-level
+      // surge's own 8-unit reach (below), so the color pattern and the
+      // actual physical rise were never showing the same zone at the
+      // same time. Tightened to match.
+      const farRadius = isWoodland ? 16 : 130;
+      // Sized from the island's own max reach, not an arbitrary radius,
+      // so it reliably covers the lake at every angle with a little
+      // buffer; doesn't need to reach the meadow/forest since the
+      // terrain's own rise occludes it there.
+      // Smaller buffer than before (was +30) -- since this is a plain
+      // square plane but the true lake edge is irregular, any buffer
+      // here is how far past the lake the water plane needlessly
+      // overlaps the meadow's rising ground at the island's narrower
+      // angles, which is real z-fighting risk. The meadow's own raised
+      // baseline (above) is the more robust fix; this just minimizes
+      // how much overlap remains.
+      const size = isWoodland ? (islandMaxRadius + LAKE_WIDTH + 4) * 2 : Math.max(GRID_W, GRID_D) + 900;
+      // Woodland needs real vertex density -- the shore surge below is an
+      // actual per-vertex height bump that has to trace the island's
+      // wobbly coastline smoothly, not the flat 4x4 grid that was fine
+      // when the water's only job was a uniform whole-plane bob.
+      const waterSegments = isWoodland ? 110 : 4;
+      const geo = new THREE.PlaneGeometry(size, size, waterSegments, waterSegments);
+      waterMaterial = new THREE.ShaderMaterial({
+        vertexShader: WATER_VERTEX_SHADER,
+        fragmentShader: WATER_FRAGMENT_SHADER,
+        transparent: true,
+        uniforms: {
+          uTime: { value: 0 },
+          // A mossy, green-leaning river palette rather than a tropical
+          // sea blue -- fits a pond in the woodland.
+          // Matched to the reference image's soft teal-mint pond, not
+          // the earlier muted sage-green.
+          uColorNear: { value: new THREE.Color(0x8cd2c3) },
+          uColorFar: { value: new THREE.Color(0xb8e8da) },
+          uWaveSpeed: { value: 0.5 },
+          uWaveAmplitude: { value: 0.18 },
+          uRippleScale: { value: 0.05 },
+          uNearRadius: { value: nearRadius },
+          uFarRadius: { value: farRadius },
+          uIslandHalfW: { value: islandHalfW },
+          uIslandHalfD: { value: islandHalfD },
+          uIslandWobble: { value: islandWobble },
+          // How fast (uTideSpeed) and how far (uTideRange, world units)
+          // the detailed-water boundary breathes in and out against the
+          // island -- the actual "ebb and flow", not just drifting noise.
+          // Slowed down considerably (was 1.1) and the range tightened
+          // (was 26, comparable to the whole island's own grass margin --
+          // far too wide, hence "flows over too much"); now sized to
+          // match the vertex surge's own tightened falloff below.
+          uTideSpeed: { value: 0.45 },
+          uTideRange: { value: 14 },
+          // Real vertex-level height surge at the shore (see the vertex
+          // shader) -- how far above the still waterline it can rise,
+          // enough to clearly exceed the shore rim's own +0.06 height so
+          // it's visibly washing up over the island's edge, not just a
+          // color change.
+          uShoreSurge: { value: isWoodland ? 0.65 : 0 },
+        },
+      });
+      const mesh = new THREE.Mesh(geo, waterMaterial);
+      mesh.rotation.x = -Math.PI / 2;
+      // Non-woodland themes: close to the plinth's own top surface (still
+      // clear of the wave bob's own +-0.12 amplitude) so the water reads
+      // as touching the tiles rather than leaving a dry rim visible --
+      // there's no island base there, so water sits right at the plinth.
+      // Woodland theme: lowered the whole island+calendar relative to the
+      // water (was -2.0) -- that much clearance meant the water's rise
+      // could never visibly submerge anything at the perimeter, only
+      // wash over the thin shore rim far below the island's actual
+      // grass. Still clearance for the island base to sit in between,
+      // just compressed.
+      waterBaseY = isWoodland ? PLINTH_TOP_Y - 1.2 : PLINTH_TOP_Y - 0.2;
+      const centerZ = GRID_D / 2 - CELL / 2;
+      mesh.position.set(0, waterBaseY, centerZ);
+      scene.add(mesh);
+
+      if (isWoodland) {
+        // Pre-darkened from the requested #499528 to compensate for the
+        // flat top-facing surface's light gain (see the matching comment
+        // on CALENDAR_THEMES.woodland.plinth, same reasoning applies here).
+        buildIslandBase(centerZ, 0x366e1e, waterBaseY, islandHalfW, islandHalfD);
+        buildSandyEmbankment(centerZ, waterBaseY, islandHalfW, islandHalfD);
+        buildShoreRocks(centerZ, waterBaseY, islandHalfW, islandHalfD);
+        const skirtRadius = buildSurroundingTerrain(centerZ, waterBaseY, islandHalfW, islandHalfD);
+        buildPanoramaBackdrop(centerZ, waterBaseY, skirtRadius);
+      }
+    }
+    buildLake();
+
+    // ------------------------------------------------------------------
     // Month pages -- two live at once (current + next/prev, prebuilt just
     // before a flip), both children of "stage".
     // ------------------------------------------------------------------
@@ -1309,21 +2054,31 @@ function getCalendarWalkHtml(
       const days = buildMonthMatrix(year, month);
       const group = new THREE.Group();
 
-      const plinthMat = new THREE.MeshStandardMaterial({ color: seasonTint(month), roughness: 0.9, metalness: 0.03 });
+      // The woodland theme keeps a fixed forest-floor plinth color
+      // year-round instead of the seasonal tint -- a consistent Hundred
+      // Acre Wood identity (and reliable foam contrast at the shoreline)
+      // matters more here than month-to-month variation.
+      const plinthColor = ACTIVE_THEME_KEY === 'woodland' ? ACTIVE_THEME.plinth : seasonTint(month);
+      const plinthMat = new THREE.MeshStandardMaterial({ color: plinthColor, roughness: 0.9, metalness: 0.03 });
       const plinth = new THREE.Mesh(getPlinthGeometry(), plinthMat);
       plinth.receiveShadow = true;
       group.add(plinth);
 
-      const ringMat = new THREE.MeshStandardMaterial({ color: ACTIVE_THEME.ring, roughness: ACTIVE_THEME.ringRough, metalness: ACTIVE_THEME.ringMetal });
-      const ringGeo = getRingGeometry();
-      const ringCount = 4;
-      for (let i = 0; i < ringCount; i++) {
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        const x = -GRID_W / 2 + (i + 0.5) * (GRID_W / ringCount);
-        ring.position.set(x, CARD_TOP_Y + 1.4, HINGE_Z - CELL / 2 + 1.5);
-        ring.rotation.x = Math.PI / 2;
-        ring.castShadow = true;
-        group.add(ring);
+      // Binder rings -- removed for the woodland theme (they
+      // read as "gold hoops" on the island's calendar, out of place in
+      // the scene); other themes keep them.
+      if (ACTIVE_THEME_KEY !== 'woodland') {
+        const ringMat = new THREE.MeshStandardMaterial({ color: ACTIVE_THEME.ring, roughness: ACTIVE_THEME.ringRough, metalness: ACTIVE_THEME.ringMetal });
+        const ringGeo = getRingGeometry();
+        const ringCount = 4;
+        for (let i = 0; i < ringCount; i++) {
+          const ring = new THREE.Mesh(ringGeo, ringMat);
+          const x = -GRID_W / 2 + (i + 0.5) * (GRID_W / ringCount);
+          ring.position.set(x, CARD_TOP_Y + 1.4, HINGE_Z - CELL / 2 + 1.5);
+          ring.rotation.x = Math.PI / 2;
+          ring.castShadow = true;
+          group.add(ring);
+        }
       }
 
       const cardGeo = getCardBoxGeometry();
@@ -1377,30 +2132,10 @@ function getCalendarWalkHtml(
         dayEntries.set(key, { date, row, col, isPadding, studyMarkerGroup });
       }
 
-      // Deadline trail -- one glowing tube per task-with-a-due-date, laid
-      // through the actual sequence of day tiles between today and that
-      // due date. See buildTaskTrails() below for why it's a continuous
-      // path through every day (not just the sparse study-marker days).
-      const trailGroup = new THREE.Group();
-      group.add(trailGroup);
-
-      return { group, year, month, dayEntries, trailGroup };
+      return { group, year, month, dayEntries };
     }
 
     // ------------------------------------------------------------------
-    // Deadline trails -- addresses time blindness directly: a due date
-    // sitting as a lone marker still asks the student to hold "how far
-    // away is that" in their head. A continuous glowing path from today's
-    // tile, through every day between, to the due-date tile turns that
-    // into something they can just look at. Deliberately walks EVERY
-    // calendar day in the range (not only the sparse days the study-plan
-    // estimator assigned a building to) -- the trail represents the whole
-    // stretch of time, not just the days with work scheduled on them.
-    // Colour and pulse speed both track urgency (days remaining), so a
-    // closer deadline visibly glows faster without needing to read a
-    // number -- same externalize-the-time-sense idea as the walk itself.
-    const TRAIL_MAX_URGENT_DAYS = 21; // beyond this, trail reads as "calm/far away" and stops changing further
-
     // Breadcrumb waypoints -- dates parsed out of a Classroom brief's own
     // text (see extractDateWaypoints() in classroom-coursework.js), placed
     // on the tile they fall on. Deliberately one plain, generic marker
@@ -1410,68 +2145,134 @@ function getCalendarWalkHtml(
     // something at this point in the wall of text" into a visible, walkable
     // stepping stone, breaking one long undifferentiated brief into a
     // sequence of small, already-sized landmarks along the trail.
-    let waypointGeoCache = null;
-    function getWaypointGeometry() {
-      if (waypointGeoCache) return waypointGeoCache;
-      waypointGeoCache = new THREE.SphereGeometry(0.55, 12, 10);
-      return waypointGeoCache;
+    // Pin shape + drop-in animation styled after the reference repo's own
+    // map-pin markers (codrops/Interactive3DMallMap): a teardrop pin --
+    // round head tapering to a point -- that animates in rather than just
+    // appearing, mirroring that repo's own .pin__icon transition (starts
+    // offset above and invisible, eases in with a slight overshoot-settle,
+    // staggered ~0.05s per pin via their :nth-child delays). That repo's
+    // actual code is plain CSS/DOM though (no 3D engine at all -- checked
+    // its real source directly), so this is a from-scratch Three.js
+    // re-creation of the same visual language, not a port of their code.
+    // (Their pins also color-code by category -- #7cbf7f/#6584c7/#dc4b7c/
+    // #8d65e0 -- deliberately not used yet; that's the "engagement levels"
+    // colour work saved for later.)
+    let waypointHeadGeoCache = null;
+    let waypointTipGeoCache = null;
+    function getWaypointHeadGeometry() {
+      if (!waypointHeadGeoCache) waypointHeadGeoCache = new THREE.SphereGeometry(0.42, 14, 10);
+      return waypointHeadGeoCache;
+    }
+    function getWaypointTipGeometry() {
+      if (!waypointTipGeoCache) waypointTipGeoCache = new THREE.ConeGeometry(0.42, 0.65, 14);
+      return waypointTipGeoCache;
     }
     const waypointMaterial = new THREE.MeshStandardMaterial({
       color: 0xf2b705, emissive: 0xf2b705, emissiveIntensity: 0.45, roughness: 0.4, metalness: 0.05,
     });
 
+    function buildWaypointPin() {
+      const pin = new THREE.Group();
+      const head = new THREE.Mesh(getWaypointHeadGeometry(), waypointMaterial);
+      head.position.y = 0.65;
+      head.castShadow = true;
+      pin.add(head);
+      // Cone points down by default already (apex at +y, base at -y from
+      // its own center) -- rotated 180deg so the point faces the tile,
+      // like a map pin's tip.
+      const tip = new THREE.Mesh(getWaypointTipGeometry(), waypointMaterial);
+      tip.position.y = 0.33;
+      tip.rotation.x = Math.PI;
+      tip.castShadow = true;
+      pin.add(tip);
+      return pin;
+    }
+
+    // This Group's own fixed design height: tip (y=0) to the top of the
+    // head sphere (0.65 + 0.42 radius) = 1.07. Used below to scale the
+    // whole pin up to the real avatar's measured leg height rather than a
+    // guessed constant -- was reading as near-invisible at this native
+    // size against the rest of the scene.
+    const PIN_DESIGN_HEIGHT = 1.07;
+    // Updated to a real measurement once the character model finishes
+    // loading (see the GLTFLoader callback below, which sets this from
+    // the actual rig's hip-to-ground distance). This fallback only
+    // matters for pins built before that load completes.
+    let AVATAR_LEG_HEIGHT = 9;
+    function getWaypointPinScale() {
+      return AVATAR_LEG_HEIGHT / PIN_DESIGN_HEIGHT;
+    }
+
+    // Active drop-in animations, advanced each frame by
+    // updateWaypointDropAnimations() (called from the render loop below).
+    // Runs on its own performance.now() clock rather than the render
+    // loop's elapsedTime variable -- buildTaskTrails() is also called
+    // once synchronously at startup, before elapsedTime exists yet (it's
+    // declared further down, only meaningful once the render loop is
+    // running), so reading it here would throw.
+    const WAYPOINT_DROP_DURATION = 0.45; // seconds -- a touch slower than the reference's 0.3s CSS fade, since this is a physical fall, not a flat transition
+    const WAYPOINT_DROP_STAGGER = 0.05; // seconds between each pin in the same build pass -- same increment the reference repo's nth-child delays use
+    let waypointDropAnimations = [];
+    // Fall distance scales with the pin's own (now avatar-matched) size --
+    // a fixed fall height read as wrong once the pin itself got much
+    // taller, since it'd be falling a shorter distance than its own height.
+    function getWaypointDropHeight() {
+      return AVATAR_LEG_HEIGHT * 1.5;
+    }
+
+    // Mirrors the reference repo's cubic-bezier(0.2,1,0.3,1) -- a fast
+    // start that slightly overshoots past rest before settling, reading
+    // as a soft "drop and land" rather than a straight fall or hard
+    // bounce. Standard ease-out-back formula.
+    function easeOutBackWaypoint(t) {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+    }
+
+    function updateWaypointDropAnimations() {
+      if (!waypointDropAnimations.length) return;
+      const now = performance.now() / 1000;
+      waypointDropAnimations = waypointDropAnimations.filter((anim) => {
+        const t = (now - anim.startTime) / WAYPOINT_DROP_DURATION;
+        if (t < 0) return true; // still waiting out its stagger delay -- stays hidden (scale 0, set at creation)
+        anim.pin.visible = true;
+        const eased = easeOutBackWaypoint(Math.min(t, 1));
+        const sizeScale = getWaypointPinScale();
+        anim.pin.position.y = anim.restY + getWaypointDropHeight() * (1 - eased);
+        anim.pin.scale.setScalar(Math.max(0, eased) * sizeScale);
+        if (t >= 1) {
+          anim.pin.position.y = anim.restY;
+          anim.pin.scale.setScalar(sizeScale);
+          return false; // done -- drop from the active list
+        }
+        return true;
+      });
+    }
+
     function buildTaskTrails(page) {
-      if (!page || !page.trailGroup) return;
-      while (page.trailGroup.children.length) {
-        const child = page.trailGroup.children[0];
-        page.trailGroup.remove(child);
-        child.geometry.dispose();
-        child.material.dispose();
-      }
+      if (!page || !page.dayEntries) return;
       page.dayEntries.forEach((entry) => {
-        while (entry.studyMarkerGroup.children.length) entry.studyMarkerGroup.remove(entry.studyMarkerGroup.children[0]);
+        while (entry.studyMarkerGroup.children.length) {
+          const old = entry.studyMarkerGroup.children[0];
+          entry.studyMarkerGroup.remove(old);
+          // Drop any in-flight drop-in animation still tracking this pin --
+          // it's gone from the scene now, nothing left to animate.
+          waypointDropAnimations = waypointDropAnimations.filter((a) => a.pin !== old);
+        }
       });
       const todayDate = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
       const msPerDay = 86400000;
+      // Global stagger index across this whole build pass (every task's
+      // waypoints together, not reset per-task) -- same as the reference
+      // repo's nth-child delay applying across all visible pins at once.
+      let waypointBatchIndex = 0;
 
       Object.keys(DAY_TASKS).forEach((dayKey) => {
         (DAY_TASKS[dayKey] || []).forEach((task) => {
           if (!task.dueDateISO) return;
           const due = new Date(task.dueDateISO + 'T00:00:00');
           const totalDays = Math.round((due - todayDate) / msPerDay);
-          if (totalDays < 1) return; // due today or already past -- nothing forward to walk
-
-          const points = [];
-          for (let offset = 0; offset <= totalDays; offset++) {
-            const entry = page.dayEntries.get(isoKey(addDays(todayDate, offset)));
-            if (entry) {
-              points.push(new THREE.Vector3(
-                -GRID_W / 2 + (entry.col + 0.5) * CELL,
-                CARD_TOP_Y + 0.09,
-                entry.row * CELL
-              ));
-            }
-          }
-          if (points.length < 2) return; // this page only shows one end of the trail (or none) -- nothing to draw here
-
-          // Straight segments between consecutive day-tiles, not a smoothed
-          // spline through all of them -- a week-wrap turn (end of one row
-          // to the start of the next) is a sharp corner, and CatmullRom
-          // badly overshoots/bulges at sharp corners, sending the tube
-          // swinging through unrelated tiles instead of tracing the real
-          // path. A CurvePath of straight LineCurve3 segments can't overshoot.
-          const curve = new THREE.CurvePath();
-          for (let i = 0; i < points.length - 1; i++) {
-            curve.add(new THREE.LineCurve3(points[i], points[i + 1]));
-          }
-          const tubeGeo = new THREE.TubeGeometry(curve, Math.max(8, points.length * 6), 0.14, 6, false);
-          const urgency = THREE.MathUtils.clamp(1 - (totalDays / TRAIL_MAX_URGENT_DAYS), 0, 1);
-          const trailColor = new THREE.Color(0x6fb7a6).lerp(new THREE.Color(0xe0a23a), urgency);
-          const mat = new THREE.MeshBasicMaterial({ color: trailColor, transparent: true, opacity: 0.5 });
-          const tube = new THREE.Mesh(tubeGeo, mat);
-          tube.userData.pulseSpeed = 0.5 + urgency * 2.2; // calm/slow far out, faster near the deadline
-          tube.userData.baseOpacity = 0.38 + urgency * 0.32;
-          page.trailGroup.add(tube);
+          if (totalDays < 1) return; // due today or already past -- no forward-looking waypoints to place
 
           (task.waypoints || []).forEach((wp) => {
             const wpDate = new Date(wp.dateISO + 'T00:00:00');
@@ -1486,10 +2287,17 @@ function getCalendarWalkHtml(
             // every other lookup on this map uses, not the raw string.
             const entry = page.dayEntries.get(isoKey(wpDate));
             if (!entry) return;
-            const marker = new THREE.Mesh(getWaypointGeometry(), waypointMaterial);
-            marker.position.set(0, 0.65, 0);
-            marker.castShadow = true;
-            entry.studyMarkerGroup.add(marker);
+            const pin = buildWaypointPin();
+            pin.position.set(0, 0, 0); // studyMarkerGroup itself already sits at the tile's surface height
+            pin.scale.setScalar(0); // starts invisible-small; updateWaypointDropAnimations() animates it in
+            pin.visible = false;
+            entry.studyMarkerGroup.add(pin);
+            waypointDropAnimations.push({
+              pin,
+              restY: 0,
+              startTime: performance.now() / 1000 + waypointBatchIndex * WAYPOINT_DROP_STAGGER,
+            });
+            waypointBatchIndex++;
           });
         });
       });
@@ -1498,15 +2306,6 @@ function getCalendarWalkHtml(
     function refreshTaskTrails() {
       buildTaskTrails(currentPage);
       buildTaskTrails(nextPage);
-    }
-
-    function pulseTaskTrails(elapsed) {
-      [currentPage, nextPage].forEach((page) => {
-        if (!page || !page.trailGroup) return;
-        page.trailGroup.children.forEach((tube) => {
-          tube.material.opacity = tube.userData.baseOpacity + Math.sin(elapsed * tube.userData.pulseSpeed) * 0.16;
-        });
-      });
     }
 
     let currentPage = buildMonthPage(TODAY.getFullYear(), TODAY.getMonth());
@@ -1715,6 +2514,19 @@ function getCalendarWalkHtml(
         const footBox = new THREE.Box3().setFromObject(characterRoot);
         groundY = footBox.min.y;
       }
+      // Real measured leg height (hips world Y minus the feet's world Y,
+      // in the same pre-adjustment reference frame as groundY above, so
+      // the delta is correct regardless of the repositioning below) --
+      // used to size the Classroom-deadline waypoint pins so they're
+      // actually visible against the rest of the scene instead of a
+      // guessed constant. Falls back to AVATAR_LEG_HEIGHT's own default
+      // if this rig has no hips bone for some reason.
+      if (hipsBone) {
+        const hipsWorld = new THREE.Vector3();
+        hipsBone.getWorldPosition(hipsWorld);
+        AVATAR_LEG_HEIGHT = Math.max(3, hipsWorld.y - groundY);
+      }
+
       // The toe-end joint sits inside the foot, not at the sole -- the shoe
       // mesh extends a bit below and around it, so landing the joint
       // exactly on the floor still buries the visible sole. Lift a little
@@ -1735,6 +2547,42 @@ function getCalendarWalkHtml(
     footstepSound.setRefDistance(10);
     characterParent.add(footstepSound);
     new THREE.AudioLoader().load(\`\${ASSET_BASE}/audio/snow-step.mp3\`, (buffer) => footstepSound.setBuffer(buffer));
+
+    // Woodland ambience -- hosted in this project's own public/
+    // folder (not the third-party ASSET_BASE the footstep sound borrows),
+    // since these are specific to this theme. Looping positional audio,
+    // same technique as footstepSound above: gentle waves at the pond,
+    // songbirds off in the trees. Autoplay attempts right when the clip
+    // loads -- browsers may silently block that until a user gesture,
+    // which is a harmless, acceptable degradation (opening the 3D view
+    // was itself a click, so this usually succeeds in practice).
+    if (ACTIVE_THEME_KEY === 'woodland') {
+      const pondAudioCenter = new THREE.Object3D();
+      pondAudioCenter.position.set(0, 2, GRID_D / 2 - CELL / 2);
+      scene.add(pondAudioCenter);
+      const wavesSound = new THREE.PositionalAudio(listener);
+      wavesSound.setLoop(true);
+      wavesSound.setRefDistance(45);
+      pondAudioCenter.add(wavesSound);
+      new THREE.AudioLoader().load('/audio/pond-waves.mp3', (buffer) => {
+        wavesSound.setBuffer(buffer);
+        wavesSound.setVolume(0.5);
+        wavesSound.play();
+      });
+
+      const birdsCenter = new THREE.Object3D();
+      birdsCenter.position.set(-GRID_W, 10, GRID_D / 2 - CELL / 2);
+      scene.add(birdsCenter);
+      const birdsSound = new THREE.PositionalAudio(listener);
+      birdsSound.setLoop(true);
+      birdsSound.setRefDistance(40);
+      birdsCenter.add(birdsSound);
+      new THREE.AudioLoader().load('/audio/forest-birds.mp3', (buffer) => {
+        birdsSound.setBuffer(buffer);
+        birdsSound.setVolume(0.35);
+        birdsSound.play();
+      });
+    }
 
     // ------------------------------------------------------------------
     // Input, bounded movement, edge-flip trigger
@@ -2440,14 +3288,14 @@ function getCalendarWalkHtml(
     const FLIP_TRIGGER_SLACK = 3.5;
 
     function update(delta) {
-      pulseTaskTrails(elapsedTime);
+      updateWaypointDropAnimations();
       if (mixer) mixer.update(delta);
       if (hipsBone && hipsRestPosition) hipsBone.position.copy(hipsRestPosition);
 
       if (flipState) {
         updateFlip(delta);
         updateFlourish(delta);
-        camera.position.lerp(cameraOffset.clone().add(new THREE.Vector3(0, 0, HINGE_Z / 2)), 0.04);
+        camera.position.lerp(cameraOffset.clone().multiplyScalar(cameraZoom).add(new THREE.Vector3(0, 0, HINGE_Z / 2)), 0.04);
         camera.lookAt(0, 6, HINGE_Z / 2);
         renderer.render(scene, camera);
         return;
@@ -2546,12 +3394,13 @@ function getCalendarWalkHtml(
       characterParent.position.y = THREE.MathUtils.lerp(characterParent.position.y, targetSurfaceY, Math.min(1, delta * 18));
 
       cameraTarget.copy(characterParent.position);
-      const rotatedOffset = cameraOffset.clone().applyAxisAngle(yAxis, currentRotation);
+      const rotatedOffset = cameraOffset.clone().multiplyScalar(cameraZoom).applyAxisAngle(yAxis, currentRotation);
       const targetCameraPos = characterParent.position.clone().add(rotatedOffset);
       camera.position.lerp(targetCameraPos, 0.06);
       camera.lookAt(cameraTarget.x, cameraTarget.y + 10, cameraTarget.z);
 
       updateHudForPosition(characterParent.position.x, characterParent.position.z);
+      if (waterMaterial) waterMaterial.uniforms.uTime.value = elapsedTime;
       renderer.render(scene, camera);
     }
 

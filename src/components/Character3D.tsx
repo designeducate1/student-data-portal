@@ -41,7 +41,7 @@ export default function Character3D({ currentBgUrl, pointerPos }: Character3DPro
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    const EYE_BG = '/backgrounds/lotr-shire.png';
+    const EYE_BG = '/backgrounds/intro-eye.jpg';
     const MINECRAFT_BG = '/backgrounds/minecraft-scene.png';
 
     // 1. Scene Setup

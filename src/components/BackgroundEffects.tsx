@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { mountIntroEye, INTRO_EYE_URL } from './introEye';
+import { mountIntroScene, INTRO_SCENE_URL } from './introScene';
 
 interface BackgroundEffectsProps {
   currentBgUrl: string;
@@ -49,79 +51,6 @@ const particlesFragmentShader = `
     if(d > 0.5) discard;
     float circle = smoothstep(0.5, 0.2, d) * 0.8;
     gl_FragColor = vec4(vColor + 0.1 * sin(uTime + vRandom.y * 6.28), circle);
-  }
-`;
-
-const eyeVertexShader = `
-  varying vec2 vUv;
-  void main() {
-    vUv = uv;
-    gl_Position = vec4(position, 1.0);
-  }
-`;
-
-const eyeFragmentShader = `
-  precision highp float;
-  uniform float uTime;
-  uniform vec3 uResolution;
-  uniform sampler2D uNoiseTexture;
-  uniform float uPupilSize;
-  uniform float uIrisWidth;
-  uniform float uGlowIntensity;
-  uniform float uIntensity;
-  uniform float uScale;
-  uniform float uNoiseScale;
-  uniform vec2 uMouse;
-  uniform float uPupilFollow;
-  uniform float uFlameSpeed;
-  uniform vec3 uEyeColor;
-  uniform vec3 uBgColor;
-
-  void main() {
-    vec2 eyeCenter = vec2(0.0, 1.0); 
-    vec2 uv = (gl_FragCoord.xy * 2.0 - uResolution.xy) / uResolution.y;
-    uv -= eyeCenter; uv /= uScale;
-
-    // Calculate mouse offset for iris and pupil tracking
-    vec2 aspectMouse = vec2(uMouse.x * uResolution.z, uMouse.y);
-    vec2 trackingCenter = vec2(0.0, 0.0); 
-    vec2 relativeMouse = aspectMouse - trackingCenter;
-    
-    // Greater movement offset for responsiveness (increased factor from 0.12 to 0.42)
-    vec2 pupilOffset = relativeMouse * uPupilFollow * 0.42;
-    float maxOffset = 0.35;
-    if (length(pupilOffset) > maxOffset) {
-      pupilOffset = normalize(pupilOffset) * maxOffset;
-    }
-
-    // Offset iris coordinates so the flaming inner core shifts seamlessly with the pupil
-    vec2 irisUv = uv - pupilOffset * 0.65;
-    vec2 pupilUv = uv - pupilOffset;
-
-    float ft = uTime * uFlameSpeed;
-    float polarRadius = length(irisUv) * 2.0;
-    float polarAngle = (2.0 * atan(irisUv.x, irisUv.y)) / 6.28 * 0.3;
-    vec2 polarUv = vec2(polarRadius, polarAngle);
-    vec4 noiseA = texture2D(uNoiseTexture, polarUv * vec2(0.2, 7.0) * uNoiseScale + vec2(-ft * 0.1, 0.0));
-    vec4 noiseB = texture2D(uNoiseTexture, polarUv * vec2(0.3, 4.0) * uNoiseScale + vec2(-ft * 0.2, 0.0));
-    vec4 noiseC = texture2D(uNoiseTexture, polarUv * vec2(0.1, 5.0) * uNoiseScale + vec2(-ft * 0.1, 0.0));
-    float distanceMask = 1.0 - length(uv);
-    float irisDistanceMask = 1.0 - length(irisUv);
-    float innerRing = clamp(-1.0 * ((irisDistanceMask - 0.7) / uIrisWidth), 0.0, 1.0);
-    innerRing = (innerRing * irisDistanceMask - 0.2) / 0.28; innerRing += noiseA.r - 0.5; innerRing *= 1.3; innerRing = clamp(innerRing, 0.0, 1.0);
-    float outerRing = clamp(-1.0 * ((irisDistanceMask - 0.5) / 0.2), 0.0, 1.0);
-    outerRing = (outerRing * irisDistanceMask - 0.1) / 0.38; outerRing += noiseC.r - 0.5; outerRing *= 1.3; outerRing = clamp(outerRing, 0.0, 1.0);
-    innerRing += outerRing;
-    float innerEye = irisDistanceMask - 0.1 * 2.0; innerEye *= noiseB.r * 2.0;
-
-    float pupil = 1.0 - length(pupilUv * vec2(9.0, 2.3)); pupil *= uPupilSize; pupil = clamp(pupil, 0.0, 1.0); pupil /= 0.35;
-    float outerEyeGlow = 1.0 - length(uv * vec2(0.5, 1.5)); outerEyeGlow = clamp(outerEyeGlow + 0.5, 0.0, 1.0); outerEyeGlow += noiseC.r - 0.5;
-    float outerBgGlow = outerEyeGlow; outerEyeGlow = pow(outerEyeGlow, 2.0); outerEyeGlow += distanceMask; outerEyeGlow *= uGlowIntensity;
-    outerEyeGlow = clamp(outerEyeGlow, 0.0, 1.0); outerEyeGlow *= pow(1.0 - distanceMask, 2.0) * 2.5;
-    outerBgGlow += distanceMask; outerBgGlow = pow(outerBgGlow, 0.5); outerBgGlow *= 0.15;
-    vec3 color = uEyeColor * uIntensity * clamp(max(innerRing + innerEye, outerEyeGlow + outerBgGlow) - pupil, 0.0, 3.0);
-    color += uBgColor;
-    gl_FragColor = vec4(color, 1.0);
   }
 `;
 
@@ -179,53 +108,6 @@ const raysFragmentShader = `
   }
 `;
 
-// Noise generator for Evil Eye
-function generateNoiseTexture(size = 256) {
-  const data = new Uint8Array(size * size * 4);
-  function hash(x: number, y: number, s: number) {
-    let n = x * 374761393 + y * 668265263 + s * 1274126177;
-    n = Math.imul(n ^ (n >>> 13), 1274126177);
-    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
-  }
-  function noise(px: number, py: number, freq: number, seed: number) {
-    const fx = (px / size) * freq;
-    const fy = (py / size) * freq;
-    const ix = Math.floor(fx);
-    const iy = Math.floor(fy);
-    const tx = fx - ix;
-    const ty = fy - iy;
-    const w = freq | 0;
-    const v00 = hash(((ix % w) + w) % w, ((iy % w) + w) % w, seed);
-    const v10 = hash((((ix + 1) % w) + w) % w, ((iy % w) + w) % w, seed);
-    const v01 = hash(((ix % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
-    const v11 = hash((((ix + 1) % w) + w) % w, (((iy + 1) % w) + w) % w, seed);
-    return v00 * (1 - tx) * (1 - ty) + v10 * tx * (1 - ty) + v01 * (1 - tx) * ty + v11 * tx * ty;
-  }
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      let v = 0;
-      let amp = 0.4;
-      let totalAmp = 0;
-      for (let o = 0; o < 8; o++) {
-        const f = 32 * (1 << o);
-        v += amp * noise(x, y, f, o * 31);
-        totalAmp += amp;
-        amp *= 0.65;
-      }
-      v /= totalAmp;
-      v = (v - 0.5) * 2.2 + 0.5;
-      v = Math.max(0, Math.min(1, v));
-      const val = Math.round(v * 255);
-      const i = (y * size + x) * 4;
-      data[i] = val;
-      data[i + 1] = val;
-      data[i + 2] = val;
-      data[i + 3] = 255;
-    }
-  }
-  return data;
-}
-
 export default function BackgroundEffects({ currentBgUrl, pointerPos, isAuthenticated }: BackgroundEffectsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const pointerPosRef = useRef(pointerPos);
@@ -240,6 +122,7 @@ export default function BackgroundEffects({ currentBgUrl, pointerPos, isAuthenti
     mesh?: THREE.Mesh | THREE.Points;
     animationFrameId?: number;
     resizeHandler?: () => void;
+    dispose?: () => void;
   }>({});
 
   useEffect(() => {
@@ -249,6 +132,7 @@ export default function BackgroundEffects({ currentBgUrl, pointerPos, isAuthenti
     // Clean up current effect if exists
     const cleanCurrentEffect = () => {
       const effect = currentEffectRef.current;
+      effect.dispose?.();
       if (effect.animationFrameId) {
         cancelAnimationFrame(effect.animationFrameId);
       }
@@ -274,272 +158,212 @@ export default function BackgroundEffects({ currentBgUrl, pointerPos, isAuthenti
 
     cleanCurrentEffect();
 
-    const EEYORE_BG = '/backgrounds/eeyore-cover-concept.png';
-    const EYE_BG = '/backgrounds/lotr-shire.png';
+    const SCENE_BG = INTRO_SCENE_URL;
+    const EYE_BG = INTRO_EYE_URL;
     const MINECRAFT_BG = '/backgrounds/minecraft-scene.png';
 
     // RENDER DETECTED BG
-    if (currentBgUrl === EEYORE_BG) {
-      // 1. Snow Particles Effect
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(25, container.clientWidth / container.clientHeight, 0.1, 100);
-      camera.position.set(0, 0, 20);
+    // A device without WebGL (or with it blocked) must still get the plain
+    // background picture, not a crashed page -- so any setup failure here
+    // just leaves the effect off.
+    try {
+      if (currentBgUrl === SCENE_BG) {
+        // 1. Woodland theme. Before login the animated intro scene sits
+        // underneath (see introScene.ts); the interactive snow falls over it,
+        // and over the plain after-login picture once logged in.
+        const disposeScene = isAuthenticated ? undefined : mountIntroScene(container, pointerPosRef);
+        const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        if (!isAuthenticated && reduceMotion) {
+          // Intro with "reduce motion" on: still picture only, no snow
+          currentEffectRef.current = { dispose: disposeScene };
+          return;
+        }
 
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.appendChild(renderer.domElement);
+        // Snow Particles Effect
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(25, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0, 0, 20);
 
-      const count = 400;
-      const pos = new Float32Array(count * 3);
-      const rnd = new Float32Array(count * 4);
-      for (let i = 0; i < count; i++) {
-        pos.set([(Math.random() * 2 - 1) * 15, (Math.random() * 2 - 1) * 15, (Math.random() * 2 - 1) * 10], i * 3);
-        rnd.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
-      }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      geo.setAttribute('aRandom', new THREE.BufferAttribute(rnd, 4));
-      geo.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(count * 3).fill(1.0), 3));
-
-      const material = new THREE.ShaderMaterial({
-        vertexShader: particlesVertexShader,
-        fragmentShader: particlesFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uSpread: { value: 1.0 },
-          uBaseSize: { value: 75 * (window.devicePixelRatio || 1) },
-          uSizeRandomness: { value: 1.0 }
-        },
-        transparent: true,
-        depthTest: false,
-        blending: THREE.AdditiveBlending
-      });
-
-      const mesh = new THREE.Points(geo, material);
-      scene.add(mesh);
-
-      const updateSize = () => {
-        if (!container) return;
-        camera.aspect = container.clientWidth / container.clientHeight;
-        camera.updateProjectionMatrix();
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(container.clientWidth, container.clientHeight);
-      };
+        // Positioned so it paints above the intro scene's (positioned) layers
+        Object.assign(renderer.domElement.style, { position: 'absolute', inset: '0' });
+        container.appendChild(renderer.domElement);
 
-      window.addEventListener('resize', updateSize);
+        const count = 400;
+        const pos = new Float32Array(count * 3);
+        const rnd = new Float32Array(count * 4);
+        for (let i = 0; i < count; i++) {
+          pos.set([(Math.random() * 2 - 1) * 15, (Math.random() * 2 - 1) * 15, (Math.random() * 2 - 1) * 10], i * 3);
+          rnd.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4);
+        }
 
-      let targetRotationX = 0;
-      let targetRotationY = 0;
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        geo.setAttribute('aRandom', new THREE.BufferAttribute(rnd, 4));
+        geo.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(count * 3).fill(1.0), 3));
 
-      const startTime = performance.now();
-      const animate = () => {
-        const id = requestAnimationFrame(animate);
-        currentEffectRef.current.animationFrameId = id;
+        const material = new THREE.ShaderMaterial({
+          vertexShader: particlesVertexShader,
+          fragmentShader: particlesFragmentShader,
+          uniforms: {
+            uTime: { value: 0 },
+            uSpread: { value: 1.0 },
+            uBaseSize: { value: 75 * (window.devicePixelRatio || 1) },
+            uSizeRandomness: { value: 1.0 }
+          },
+          transparent: true,
+          depthTest: false,
+          blending: THREE.AdditiveBlending
+        });
 
-        material.uniforms.uTime.value = (performance.now() - startTime) * 0.001;
+        const mesh = new THREE.Points(geo, material);
+        scene.add(mesh);
 
-        targetRotationX = pointerPosRef.current.ty * 0.2;
-        targetRotationY = pointerPosRef.current.tx * 0.2;
+        const updateSize = () => {
+          if (!container) return;
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
+        };
 
-        mesh.rotation.x += (targetRotationX - mesh.rotation.x) * 0.05;
-        mesh.rotation.y += (targetRotationY - mesh.rotation.y) * 0.05;
+        window.addEventListener('resize', updateSize);
 
-        renderer.render(scene, camera);
-      };
+        let targetRotationX = 0;
+        let targetRotationY = 0;
 
-      animate();
+        const startTime = performance.now();
+        const animate = () => {
+          const id = requestAnimationFrame(animate);
+          currentEffectRef.current.animationFrameId = id;
 
-      currentEffectRef.current = {
-        renderer,
-        scene,
-        camera,
-        material,
-        mesh,
-        resizeHandler: updateSize
-      };
+          material.uniforms.uTime.value = (performance.now() - startTime) * 0.001;
 
-    } else if (currentBgUrl === EYE_BG) {
-      if (isAuthenticated) {
-        // Return early to do nothing, letting the original Shire image (EYE_BG) be visible without the floating eye overlay
-        return;
-      }
-      // 2. Evil Eye Shader Effect
-      const scene = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+          targetRotationX = pointerPosRef.current.ty * 0.2;
+          targetRotationY = pointerPosRef.current.tx * 0.2;
 
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.appendChild(renderer.domElement);
+          mesh.rotation.x += (targetRotationX - mesh.rotation.x) * 0.05;
+          mesh.rotation.y += (targetRotationY - mesh.rotation.y) * 0.05;
 
-      const noiseData = generateNoiseTexture(256);
-      const noiseTexture = new THREE.DataTexture(noiseData, 256, 256, THREE.RGBAFormat);
-      noiseTexture.needsUpdate = true;
-      noiseTexture.wrapS = THREE.RepeatWrapping;
-      noiseTexture.wrapT = THREE.RepeatWrapping;
-      noiseTexture.minFilter = THREE.LinearFilter;
-      noiseTexture.magFilter = THREE.LinearFilter;
+          renderer.render(scene, camera);
+        };
 
-      const uEyeColor = new THREE.Vector3(1.0, 0.435, 0.215); // #FF6F37
-      const uBgColor = new THREE.Vector3(0.023, 0.0, 0.062); // #060010
+        animate();
 
-      const material = new THREE.ShaderMaterial({
-        vertexShader: eyeVertexShader,
-        fragmentShader: eyeFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uResolution: { value: new THREE.Vector3(container.clientWidth, container.clientHeight, container.clientWidth / container.clientHeight) },
-          uNoiseTexture: { value: noiseTexture },
-          uPupilSize: { value: 0.6 },
-          uIrisWidth: { value: 0.25 },
-          uGlowIntensity: { value: 0.35 },
-          uIntensity: { value: 1.5 },
-          uScale: { value: 1.4 },
-          uNoiseScale: { value: 1.0 },
-          uMouse: { value: new THREE.Vector2(0, 0) },
-          uPupilFollow: { value: 1.0 },
-          uFlameSpeed: { value: 1.0 },
-          uEyeColor: { value: uEyeColor },
-          uBgColor: { value: uBgColor }
-        },
-        transparent: true
-      });
+        currentEffectRef.current = {
+          renderer,
+          scene,
+          camera,
+          material,
+          mesh,
+          resizeHandler: updateSize,
+          dispose: disposeScene
+        };
 
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-      scene.add(mesh);
+      } else if (currentBgUrl === EYE_BG) {
+        if (isAuthenticated) {
+          // After login the hillside picture shows on its own, no eye overlay
+          return;
+        }
+        // 2. Intro eye (photo + flame shader + embers), see introEye.ts
+        currentEffectRef.current = { dispose: mountIntroEye(container, pointerPosRef) };
 
-      const updateSize = () => {
-        if (!container) return;
+      } else if (currentBgUrl === MINECRAFT_BG) {
+        // 3. Volumetric Rays Shader Effect
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: false });
+        renderer.setClearColor(0x000000, 1);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(container.clientWidth, container.clientHeight);
-        material.uniforms.uResolution.value.set(
-          container.clientWidth,
-          container.clientHeight,
-          container.clientWidth / container.clientHeight
-        );
-      };
+        container.appendChild(renderer.domElement);
 
-      window.addEventListener('resize', updateSize);
+        const uRaysColor = new THREE.Vector3(1.0, 1.0, 1.0);
 
-      let eyeX = 0;
-      let eyeY = 0;
-      const startTime = performance.now();
+        const loader = new THREE.TextureLoader();
+        loader.setCrossOrigin('anonymous');
+        const bgTexture = loader.load(MINECRAFT_BG);
+        bgTexture.minFilter = THREE.LinearFilter;
+        bgTexture.magFilter = THREE.LinearFilter;
 
-      const animate = () => {
-        const id = requestAnimationFrame(animate);
-        currentEffectRef.current.animationFrameId = id;
+        const material = new THREE.ShaderMaterial({
+          vertexShader: raysVertexShader,
+          fragmentShader: raysFragmentShader,
+          uniforms: {
+            iTime: { value: 0 },
+            iResolution: { value: new THREE.Vector2(container.clientWidth * renderer.getPixelRatio(), container.clientHeight * renderer.getPixelRatio()) },
+            rayPos: { value: new THREE.Vector2() },
+            rayDir: { value: new THREE.Vector2(0, 1) },
+            raysColor: { value: uRaysColor },
+            raysSpeed: { value: 1.0 },
+            lightSpread: { value: 0.5 },
+            rayLength: { value: 3.0 },
+            pulsating: { value: 0.0 },
+            fadeDistance: { value: 1.0 },
+            saturation: { value: 1.0 },
+            mousePos: { value: new THREE.Vector2(0.5, 0.5) },
+            mouseInfluence: { value: 0.85 },
+            noiseAmount: { value: 0.0 },
+            distortion: { value: 0.0 },
+            uBgTexture: { value: bgTexture }
+          },
+          transparent: false,
+          depthTest: false
+        });
 
-        eyeX += (pointerPosRef.current.tx - eyeX) * 0.10;
-        eyeY += (pointerPosRef.current.ty - eyeY) * 0.10;
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        scene.add(mesh);
 
-        material.uniforms.uTime.value = (performance.now() - startTime) * 0.001;
-        material.uniforms.uMouse.value.set(eyeX, eyeY);
+        const updateSize = () => {
+          if (!container) return;
+          const w = container.clientWidth;
+          const h = container.clientHeight;
+          renderer.setSize(w, h);
+          const dpr = renderer.getPixelRatio();
+          const rw = w * dpr;
+          const rh = h * dpr;
+          material.uniforms.iResolution.value.set(rw, rh);
+          const outside = 0.2;
+          material.uniforms.rayPos.value.set(0.5 * rw, -outside * rh);
+          material.uniforms.rayDir.value.set(0, 1);
+        };
 
-        renderer.render(scene, camera);
-      };
+        updateSize();
+        window.addEventListener('resize', updateSize);
 
-      animate();
+        let rayX = 0.5;
+        let rayY = 0.5;
+        const startTime = performance.now();
 
-      currentEffectRef.current = {
-        renderer,
-        scene,
-        camera,
-        material,
-        mesh,
-        resizeHandler: updateSize
-      };
+        const animate = () => {
+          const id = requestAnimationFrame(animate);
+          currentEffectRef.current.animationFrameId = id;
 
-    } else if (currentBgUrl === MINECRAFT_BG) {
-      // 3. Volumetric Rays Shader Effect
-      const scene = new THREE.Scene();
-      const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+          rayX += (pointerPosRef.current.rayTx - rayX) * 0.08;
+          rayY += (pointerPosRef.current.rayTy - rayY) * 0.08;
 
-      const renderer = new THREE.WebGLRenderer({ alpha: false, antialias: false });
-      renderer.setClearColor(0x000000, 1);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.appendChild(renderer.domElement);
+          material.uniforms.iTime.value = (performance.now() - startTime) * 0.001;
+          material.uniforms.mousePos.value.set(rayX, rayY);
 
-      const uRaysColor = new THREE.Vector3(1.0, 1.0, 1.0);
+          renderer.render(scene, camera);
+        };
 
-      const loader = new THREE.TextureLoader();
-      loader.setCrossOrigin('anonymous');
-      const bgTexture = loader.load(MINECRAFT_BG);
-      bgTexture.minFilter = THREE.LinearFilter;
-      bgTexture.magFilter = THREE.LinearFilter;
+        animate();
 
-      const material = new THREE.ShaderMaterial({
-        vertexShader: raysVertexShader,
-        fragmentShader: raysFragmentShader,
-        uniforms: {
-          iTime: { value: 0 },
-          iResolution: { value: new THREE.Vector2(container.clientWidth * renderer.getPixelRatio(), container.clientHeight * renderer.getPixelRatio()) },
-          rayPos: { value: new THREE.Vector2() },
-          rayDir: { value: new THREE.Vector2(0, 1) },
-          raysColor: { value: uRaysColor },
-          raysSpeed: { value: 1.0 },
-          lightSpread: { value: 0.5 },
-          rayLength: { value: 3.0 },
-          pulsating: { value: 0.0 },
-          fadeDistance: { value: 1.0 },
-          saturation: { value: 1.0 },
-          mousePos: { value: new THREE.Vector2(0.5, 0.5) },
-          mouseInfluence: { value: 0.85 },
-          noiseAmount: { value: 0.0 },
-          distortion: { value: 0.0 },
-          uBgTexture: { value: bgTexture }
-        },
-        transparent: false,
-        depthTest: false
-      });
-
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-      scene.add(mesh);
-
-      const updateSize = () => {
-        if (!container) return;
-        const w = container.clientWidth;
-        const h = container.clientHeight;
-        renderer.setSize(w, h);
-        const dpr = renderer.getPixelRatio();
-        const rw = w * dpr;
-        const rh = h * dpr;
-        material.uniforms.iResolution.value.set(rw, rh);
-        const outside = 0.2;
-        material.uniforms.rayPos.value.set(0.5 * rw, -outside * rh);
-        material.uniforms.rayDir.value.set(0, 1);
-      };
-
-      updateSize();
-      window.addEventListener('resize', updateSize);
-
-      let rayX = 0.5;
-      let rayY = 0.5;
-      const startTime = performance.now();
-
-      const animate = () => {
-        const id = requestAnimationFrame(animate);
-        currentEffectRef.current.animationFrameId = id;
-
-        rayX += (pointerPosRef.current.rayTx - rayX) * 0.08;
-        rayY += (pointerPosRef.current.rayTy - rayY) * 0.08;
-
-        material.uniforms.iTime.value = (performance.now() - startTime) * 0.001;
-        material.uniforms.mousePos.value.set(rayX, rayY);
-
-        renderer.render(scene, camera);
-      };
-
-      animate();
-
-      currentEffectRef.current = {
-        renderer,
-        scene,
-        camera,
-        material,
-        mesh,
-        resizeHandler: updateSize
-      };
+        currentEffectRef.current = {
+          renderer,
+          scene,
+          camera,
+          material,
+          mesh,
+          resizeHandler: updateSize
+        };
+      }
+    } catch (err) {
+      console.warn('Background effect unavailable, showing the still picture', err);
+      cleanCurrentEffect();
     }
 
     return () => {
