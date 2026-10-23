@@ -268,6 +268,12 @@ function startWebGL(container: HTMLElement, pointerRef: PointerRef): (() => void
   embers.renderOrder = 1;
   scene.add(embers);
 
+  let baseX = 0;
+  let baseY = 0;
+  let driftRangeX = 0;
+  let driftRangeY = 0;
+  let driftX = 0;
+  let driftY = 0;
   const resize = () => {
     const w = container.clientWidth;
     const h = container.clientHeight;
@@ -275,7 +281,13 @@ function startWebGL(container: HTMLElement, pointerRef: PointerRef): (() => void
     renderer.setSize(w, h);
     const { size, cx, cyTop } = layout(w, h);
     shared.uResolution.value.set(w * pixelRatio, h * pixelRatio);
-    shared.uImgCenter.value.set(cx * pixelRatio, (h - cyTop) * pixelRatio);
+    baseX = cx * pixelRatio;
+    baseY = (h - cyTop) * pixelRatio;
+    // Whole-eye drift range: 6% of the width sideways, 4% of the height up
+    // and down -- enough to feel it follow, never enough to leave the screen.
+    driftRangeX = w * 0.06 * pixelRatio;
+    driftRangeY = h * 0.04 * pixelRatio;
+    shared.uImgCenter.value.set(baseX + driftX * driftRangeX, baseY + driftY * driftRangeY);
     shared.uImgSize.value = size * pixelRatio;
     shared.uDpr.value = pixelRatio;
   };
@@ -326,6 +338,11 @@ function startWebGL(container: HTMLElement, pointerRef: PointerRef): (() => void
     const len = Math.hypot(lookX, lookY);
     const k = len > 1 ? 1 / len : 1;
     shared.uLook.value.set(lookX * k, lookY * k);
+    // The whole eye follows too, but more slowly than the iris (4% of the
+    // gap per frame), so it drifts after the pointer rather than chasing it.
+    driftX += (lookX * k - driftX) * 0.04;
+    driftY += (lookY * k - driftY) * 0.04;
+    shared.uImgCenter.value.set(baseX + driftX * driftRangeX, baseY + driftY * driftRangeY);
     shared.uTime.value = (now - startTime) * 0.001;
     renderer.render(scene, camera);
 

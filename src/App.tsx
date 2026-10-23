@@ -8,6 +8,7 @@ import CalendarWalk from './components/CalendarWalk';
 import { Calendar2D } from './components/Calendar2D';
 import { loadCalendarNotes, saveCalendarNotes, loadCalendarTasks, saveCalendarTasks } from './lib/localStudent';
 import { ClassroomReconnectBanner } from './components/ClassroomReconnectBanner';
+import { IntroSoundToggle, WOODLAND_TRACKS, EYE_TRACKS, CAVE_TRACKS } from './components/IntroSoundToggle';
 
 const SCENE_BG = '/backgrounds/intro-scene.jpg';
 const SCENE_THUMB = '/backgrounds/intro-scene-thumb.jpg';
@@ -773,6 +774,16 @@ export default function StudentPortalApp() {
             id="introPage"
             className="flex-1 z-10 flex flex-col relative transition-all duration-500 ease-in-out pointer-events-auto bg-transparent"
           >
+            {/* keyed by theme so switching themes stops one sound and resets the toggle to off */}
+            <div key={currentBgUrl} className="absolute top-4 right-4 z-20">
+              {currentBgUrl === SCENE_BG ? (
+                <IntroSoundToggle tracks={WOODLAND_TRACKS} label="Woodland sounds" />
+              ) : currentBgUrl === EYE_BG ? (
+                <IntroSoundToggle tracks={EYE_TRACKS} label="Music" />
+              ) : (
+                <IntroSoundToggle tracks={CAVE_TRACKS} label="Music" />
+              )}
+            </div>
             <div className="relative z-10 flex flex-col justify-end items-center w-full min-h-full pb-[12vh] sm:pb-[16vh] pt-14 px-6 pointer-events-none">
               <h1
                 id="welcomeText"
